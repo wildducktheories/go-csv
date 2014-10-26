@@ -1,0 +1,23 @@
+NAME
+====
+go-csv - a set of golang tools and libraries for manipulating CSV representations
+
+DESCRIPTION
+===========
+go-csv is a set of tools for manipulating streams of CSV data. 
+
+As a rule, most tools in this set assume CSV files that include a header record that describes the contents of each field.
+
+TOOLS
+=====
+
+* uniquify - augments a partial key so that each record in the output stream has a unique natural key
+* surrogate-keys - augments the input stream so that each record in the output stream has a surrogate key derived from the MD5 sum of the natural key
+
+LICENSE
+=======
+Refer to LICENSE file in same directory.
+
+COPYRIGHT
+=========
+(c) 2014 - Wild Duck Theories Australia Pty Limited
