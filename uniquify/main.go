@@ -108,11 +108,11 @@ func body() error {
 		formattedKey := csv.Format(key)
 		additionalKeyValue, ok := keys[formattedKey]
 		if !ok {
-			keys[formattedKey] = 0
+			additionalKeyValue = 0
 		} else {
 			additionalKeyValue++
-			keys[formattedKey] = additionalKeyValue
 		}
+		keys[formattedKey] = additionalKeyValue
 		copy(augmentedData, data.AsSlice())
 		if additionalKeyValue > 0 {
 			augmentedData[len(dataHeader)] = fmt.Sprintf("%d", additionalKeyValue)
