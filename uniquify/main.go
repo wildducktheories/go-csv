@@ -1,5 +1,7 @@
-// Given a header-prefixed input stream of CSV records and the specification of a partial key formed from one or more of the fields, generate an augmented,
-// header-prefixed, stream of CSV records such that the augmented key of each output record is unique.
+// Given a header-prefixed input stream of CSV records and the specification of a partial key (--partial-key)
+// formed from one or more of the fields, generate an augmented, header-prefixed, stream of CSV records
+// such that the augmented key of each output record is unique. The field used to ensure uniqueness is
+// specified by the --additional-key option.
 //
 // For example, given the following input with the partial key Date,Amount
 //
