@@ -45,7 +45,9 @@ func ReadAll(reader Reader) ([]Record, error) {
 
 // WithIoReader creates a csv Reader from the specified io Reader.
 func WithIoReader(io io.Reader) (Reader, error) {
-	return WithCsvReader(csv.NewReader(io))
+	csvReader := csv.NewReader(io)
+	csvReader.FieldsPerRecord = -1
+	return WithCsvReader(csvReader)
 }
 
 // WithCsvReader creates a csv reader from the specified encoding/csv Reader.
