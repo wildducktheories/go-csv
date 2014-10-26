@@ -3,6 +3,8 @@ package csv
 //Record provides keyed access to the fields of data records where each field
 //of a data record is keyed by the value of the corresponding field in the header record.
 type Record interface {
+	// Return the header of the record.
+	Header() []string
 	// Gets the value of the field specified by the key. Returns the empty string
 	// if the field does not exist in the record.
 	Get(key string) string
@@ -39,6 +41,10 @@ func NewRecordBuilder(header []string) func(fields []string) Record {
 			fields: tmp,
 		}
 	}
+}
+
+func (r *record) Header() []string {
+	return r.header
 }
 
 // Answer the value of the field indexed by the column containing the specified header value.
