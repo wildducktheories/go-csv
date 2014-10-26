@@ -10,9 +10,13 @@ As a rule, most tools in this set assume CSV files that include a header record 
 
 TOOLS
 =====
-
+* csv-select - selects the specified fields from the header-prefixed, CSV input stream
 * uniquify - augments a partial key so that each record in the output stream has a unique natural key
 * surrogate-keys - augments the input stream so that each record in the output stream has a surrogate key derived from the MD5 sum of the natural key
+
+DOCUMENTATION
+=============
+For more information, refer to https://godoc.org/github.com/wildducktheories/go-csv .
 
 LICENSE
 =======
