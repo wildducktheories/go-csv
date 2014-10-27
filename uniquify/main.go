@@ -23,11 +23,11 @@ package main
 import (
 	rawCsv "encoding/csv"
 	"github.com/wildducktheories/go-csv"
+	"github.com/wildducktheories/go-csv/utils"
 
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func body() error {
@@ -62,28 +62,17 @@ func body() error {
 
 	// create a stream from the header
 	dataHeader := reader.Header()
-	formattedDataHeader := csv.Format(dataHeader)
-	headerStream, err := csv.WithIoReader(strings.NewReader(formattedDataHeader + "\n" + formattedDataHeader))
-	if err != nil {
-		return fmt.Errorf("failed to reparse header: %v", err)
-	}
-	headerRec, err := headerStream.Read()
 
-	// check that every key in the partial-key is also in the data header
-	for _, h := range partialKeys {
-		if err != nil {
-			return err
-		}
-		if headerRec.Get(h) != h {
-			return fmt.Errorf("'%s' is not a field of the input stream", h)
-		}
+	i, a, _ := utils.Intersect(partialKeys, dataHeader)
+	if len(a) > 0 {
+		return fmt.Errorf("%s does not exist in the data header", csv.Format(a))
 	}
 
-	if headerRec.Get(additionalKey) != "" {
-		return fmt.Errorf("'%s' already exists in the header", additionalKey)
+	i, a, _ = utils.Intersect([]string{additionalKey}, dataHeader)
+	if len(i) != 0 {
+		return fmt.Errorf("%s already exists in data header", i[0])
 	}
 
-	// create a new output stream
 	augmentedHeader := make([]string, len(dataHeader)+1)
 	copy(augmentedHeader, dataHeader)
 	augmentedHeader[len(dataHeader)] = additionalKey

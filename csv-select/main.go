@@ -3,12 +3,13 @@ package main
 
 import (
 	rawCsv "encoding/csv"
-	"github.com/wildducktheories/go-csv"
 
 	"flag"
 	"fmt"
 	"os"
-	"strings"
+
+	"github.com/wildducktheories/go-csv"
+	"github.com/wildducktheories/go-csv/utils"
 )
 
 func body() error {
@@ -37,25 +38,13 @@ func body() error {
 
 	// create a stream from the header
 	dataHeader := reader.Header()
-	formattedDataHeader := csv.Format(dataHeader)
-	headerStream, err := csv.WithIoReader(strings.NewReader(formattedDataHeader + "\n" + formattedDataHeader))
-	if err != nil {
-		return fmt.Errorf("failed to reparse header: %v", err)
-	}
-	headerRec, err := headerStream.Read()
 
-	// check that every key in the partial-key is also in the data header
-	for _, h := range keys {
-		if err != nil {
-			return err
-		}
-		if headerRec.Get(h) != h {
-			return fmt.Errorf("'%s' is not a field of the input stream", h)
-		}
+	_, a, _ := utils.Intersect(keys, dataHeader)
+	if len(a) != 0 {
+		return fmt.Errorf("'%s' is not a field of the input stream", csv.Format(a))
 	}
 
 	// create a new output stream
-
 	writer := rawCsv.NewWriter(os.Stdout)
 	writer.Write(keys)
 	for {
