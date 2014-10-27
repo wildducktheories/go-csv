@@ -1,3 +1,4 @@
+//Some additional utilities that are useful when processing CSV headers and data.
 package utils
 
 // Return a maps each string to its index in the string.
@@ -10,7 +11,7 @@ func Index(a []string) map[string]int {
 }
 
 // Calculate the intersection between two string slices. The first returned slice
-// is the intersection between twh two slices. The second returned slice is
+// is the intersection between the two slices. The second returned slice is
 // a slice of elements in the first slice but not the second. The third returned
 // slice is a slice of elements in the second slice but not the first.
 func Intersect(a []string, b []string) ([]string, []string, []string) {
