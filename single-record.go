@@ -22,5 +22,5 @@ func Format(record []string) string {
 	writer := csv.NewWriter(buffer)
 	writer.Write(record)
 	writer.Flush()
-	return buffer.String()
+	return strings.TrimRight(buffer.String(), "\n")
 }
