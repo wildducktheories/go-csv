@@ -1,6 +1,6 @@
 // Given a header-prefixed input stream of CSV records select the fields that match the specified key (--key).
 // If --permute-only is is specified, all the fields of the input stream are preserved, but the output stream
-// is permuted so that the key fields occupy the left-most fields of the outout stream. The remaining fields
+// is permuted so that the key fields occupy the left-most fields of the output stream. The remaining fields
 // are preserved in their original order.
 package main
 
