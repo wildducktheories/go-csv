@@ -1,7 +1,7 @@
 //Some additional utilities that are useful when processing CSV headers and data.
 package utils
 
-// Return a maps each string to its index in the string.
+// Return a map that maps each string in the input slice to its index in the slice.
 func Index(a []string) map[string]int {
 	index := make(map[string]int)
 	for i, v := range a {
