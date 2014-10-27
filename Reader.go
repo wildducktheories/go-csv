@@ -27,13 +27,7 @@ func ReadAll(reader Reader) ([]Record, error) {
 	all := make([]Record, 0, 1)
 	for {
 		if record, err := reader.Read(); err == nil {
-			if len(all) == cap(all) {
-				extension := make([]Record, len(all), cap(all)*2)
-				copy(extension, all)
-				all = extension
-			}
-			all = all[0 : len(all)+1]
-			all[len(all)-1] = record
+			all = append(all, record)
 		} else {
 			if err.Error() == "EOF" {
 				err = nil
