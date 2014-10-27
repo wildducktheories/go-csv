@@ -33,8 +33,8 @@ import (
 func body() error {
 	var partialKey, additionalKey string
 
-	flag.StringVar(&partialKey, "partial-key", "", "The columns of the partial key.")
-	flag.StringVar(&additionalKey, "additional-key", "", "The column name for the additional key.")
+	flag.StringVar(&partialKey, "partial-key", "", "The fields of the partial key.")
+	flag.StringVar(&additionalKey, "additional-key", "", "The field name for the additional key.")
 	flag.Parse()
 
 	usage := func() {

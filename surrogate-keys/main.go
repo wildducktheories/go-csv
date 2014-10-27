@@ -33,8 +33,8 @@ import (
 func body() error {
 	var naturalKey, surrogateKey string
 
-	flag.StringVar(&naturalKey, "natural-key", "", "The columns of the natural key")
-	flag.StringVar(&surrogateKey, "surrogate-key", "", "The column name for the surrogate key.")
+	flag.StringVar(&naturalKey, "natural-key", "", "The fields of the natural key")
+	flag.StringVar(&surrogateKey, "surrogate-key", "", "The field name for the surrogate key.")
 	flag.Parse()
 
 	usage := func() {
