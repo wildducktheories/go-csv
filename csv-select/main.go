@@ -14,8 +14,10 @@ import (
 
 func body() error {
 	var key string
+	var permuteOnly bool
 
 	flag.StringVar(&key, "key", "", "The fields to copy into the output stream")
+	flag.BoolVar(&permuteOnly, "permute-only", false, "Preserve all the fields of the input, but put the specified keys first")
 	flag.Parse()
 
 	usage := func() {
@@ -39,9 +41,16 @@ func body() error {
 	// create a stream from the header
 	dataHeader := reader.Header()
 
-	_, a, _ := utils.Intersect(keys, dataHeader)
+	i, a, b := utils.Intersect(keys, dataHeader)
 	if len(a) != 0 {
 		return fmt.Errorf("'%s' is not a field of the input stream", csv.Format(a))
+	}
+
+	if len(b) > 0 && permuteOnly {
+		extend := make([]string, len(i)+len(b))
+		copy(extend, i)
+		copy(extend[len(i):], b)
+		keys = extend
 	}
 
 	// create a new output stream
