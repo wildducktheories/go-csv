@@ -37,7 +37,7 @@ func body() error {
 
 	// open the reader
 	reader, err := csv.WithIoReader(os.Stdin)
-	if err != nil {
+	if err != nil && err.Error() != "EOF" {
 		return fmt.Errorf("cannot parse header from input stream: %v", err)
 	}
 
