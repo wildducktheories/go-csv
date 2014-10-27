@@ -13,9 +13,9 @@
 // generate an additional column, KeyMD5, containing a surrogate key that represents the natural key.
 //
 // 		Date,Amount,Description,Sequence,KeyMD5
-// 		2014/12/31,100.0,Payment,"",d97e17fc4b32aa405da3598c82be4052
-// 		2014/12/31,100.0,Payment,1,6c21a286811d8f7c90c19a68de4091c4
-// 		2014/12/31,85.0,Payment,"",c2f3e05f25610fb52c8e543ea95393c0
+// 		2014/12/31,100.0,Payment,"",bead7c34cf0828efb8a240e262e7afea
+// 		2014/12/31,100.0,Payment,1,cc8ab528163236eb1aa4004202ee1935
+// 		2014/12/31,85.0,Payment,"",8f4d3a8a05031256a4fa4cf1fadd757b
 //
 package main
 
