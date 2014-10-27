@@ -1,5 +1,9 @@
 package csv
 
+import (
+	"github.com/wildducktheories/go-csv/utils"
+)
+
 //Record provides keyed access to the fields of data records where each field
 //of a data record is keyed by the value of the corresponding field in the header record.
 type Record interface {
@@ -28,11 +32,8 @@ type record struct {
 // This can be used with raw encoding/csv streams in cases where a CSV stream contains
 // more than one record type.
 func NewRecordBuilder(header []string) func(fields []string) Record {
+	index := utils.Index(header)
 	return func(fields []string) Record {
-		index := make(map[string]int)
-		for i, h := range header {
-			index[h] = i
-		}
 		tmp := make([]string, len(fields), len(header))
 		copy(tmp, fields)
 		return &record{
