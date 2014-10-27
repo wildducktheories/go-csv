@@ -35,24 +35,20 @@ func body() error {
 		return fmt.Errorf("--key must specify one or more columns")
 	}
 
-	// check that the key exist in the dataHeader
+	// open the reader
 	reader, err := csv.WithIoReader(os.Stdin)
 	if err != nil {
 		return fmt.Errorf("cannot parse header from input stream: %v", err)
 	}
 
-	// create a stream from the header
+	// get the data header
 	dataHeader := reader.Header()
 
-	i, a, b := utils.Intersect(keys, dataHeader)
-	if len(a) != 0 {
-		return fmt.Errorf("'%s' is not a field of the input stream", csv.Format(a))
-	}
-
+	_, _, b := utils.Intersect(keys, dataHeader)
 	if len(b) > 0 && permuteOnly {
-		extend := make([]string, len(i)+len(b))
-		copy(extend, i)
-		copy(extend[len(i):], b)
+		extend := make([]string, len(keys)+len(b))
+		copy(extend, keys)
+		copy(extend[len(keys):], b)
 		keys = extend
 	}
 
