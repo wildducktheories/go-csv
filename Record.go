@@ -1,7 +1,9 @@
 package csv
 
 import (
+	"fmt"
 	"github.com/wildducktheories/go-csv/utils"
+	"os"
 )
 
 //Record provides keyed access to the fields of data records where each field
@@ -34,7 +36,10 @@ type record struct {
 func NewRecordBuilder(header []string) func(fields []string) Record {
 	index := utils.Index(header)
 	return func(fields []string) Record {
-		tmp := make([]string, len(fields), len(header))
+		if len(header) < len(fields) {
+			fmt.Fprintf(os.Stderr, "invariant violated: [%d]fields=%v, [%d]header=%v\n", len(fields), fields, len(header), header)
+		}
+		tmp := make([]string, len(header), len(header))
 		copy(tmp, fields)
 		return &record{
 			header: header,
