@@ -37,6 +37,15 @@ func body() error {
 	flag.StringVar(&additionalKey, "additional-key", "", "The field name for the additional key.")
 	flag.Parse()
 
+	var line = 0
+	var failed = true
+
+	defer func() {
+		if failed {
+			fmt.Fprintf(os.Stderr, "failed at line: %d\n", line+1)
+		}
+	}()
+
 	usage := func() {
 		fmt.Printf("usage: uniqify {options}\n")
 		flag.PrintDefaults()
@@ -59,6 +68,7 @@ func body() error {
 	if err != nil {
 		return fmt.Errorf("cannot parse header from input stream: %v", err)
 	}
+	line = 1
 
 	// create a stream from the header
 	dataHeader := reader.Header()
@@ -90,6 +100,7 @@ func body() error {
 			}
 			return err
 		}
+		line++
 		key := make([]string, len(partialKeys))
 		for i, h := range partialKeys {
 			key[i] = data.Get(h)
@@ -109,7 +120,7 @@ func body() error {
 		writer.Write(augmentedData)
 	}
 	writer.Flush()
-
+	failed = false
 	return nil
 }
 
