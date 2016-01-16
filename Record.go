@@ -18,7 +18,7 @@ type Record interface {
 	Put(key string, value string)
 	// Return the contents of the record as a map.
 	AsMap() map[string]string
-	// Return the contents of the record as a slice.
+	// Return the contents of the record as a slice. Mutation of the slice is not supported.
 	AsSlice() []string
 }
 
@@ -90,7 +90,5 @@ func (r *record) AsMap() map[string]string {
 
 // Return the record values as a slice.
 func (r *record) AsSlice() []string {
-	result := make([]string, len(r.fields), len(r.header))
-	copy(result, r.fields)
-	return result
+	return r.fields
 }
