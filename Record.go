@@ -16,12 +16,14 @@ type Record interface {
 	Get(key string) string
 	// Puts the value into the field specified by the key.
 	Put(key string, value string)
-	// Puts all the matching values from the specified record into the receiving record
-	PutAll(r Record)
 	// Return the contents of the record as a map. Mutation of the map is not supported.
 	AsMap() map[string]string
 	// Return the contents of the record as a slice. Mutation of the slice is not supported.
 	AsSlice() []string
+	// Puts all the matching values from the specified record into the receiving record
+	PutAll(r Record)
+	// Return true if the receiver and the specified record have the same header.
+	SameHeader(r Record) bool
 }
 
 type record struct {
@@ -81,17 +83,6 @@ func (r *record) Put(key string, value string) {
 	}
 }
 
-// Puts all the specified value into the record.
-func (r *record) PutAll(in Record) {
-	for i, k := range r.header {
-		v := in.Get(k)
-		r.fields[i] = v
-		if r.cache != nil {
-			r.cache[k] = v
-		}
-	}
-}
-
 // Return a map containing a copy of the contents of the record.
 func (r *record) AsMap() map[string]string {
 	if r.cache != nil {
@@ -113,4 +104,38 @@ func (r *record) AsMap() map[string]string {
 // Return the record values as a slice.
 func (r *record) AsSlice() []string {
 	return r.fields
+}
+
+// Puts all the specified value into the record.
+func (r *record) PutAll(o Record) {
+	if r.SameHeader(o) {
+		copy(r.fields, o.AsSlice())
+		r.cache = nil
+	} else {
+		for i, k := range r.header {
+			v := o.Get(k)
+			r.fields[i] = v
+			if r.cache != nil {
+				r.cache[k] = v
+			}
+		}
+	}
+}
+
+// Efficiently check that the receiver and specified records have the same header
+func (r *record) SameHeader(o Record) bool {
+	h := o.Header()
+	if len(r.header) != len(h) {
+		return false
+	} else if len(h) == 0 || &h[0] == &r.header[0] {
+		// two slices with the same address and length have the same contents
+		return true
+	} else {
+		for i, k := range r.header {
+			if h[i] != k {
+				return false
+			}
+		}
+		return true
+	}
 }
