@@ -16,6 +16,8 @@ type Record interface {
 	Get(key string) string
 	// Puts the value into the field specified by the key.
 	Put(key string, value string)
+	// Puts all the matching values from the specified record into the receiving record
+	PutAll(r Record)
 	// Return the contents of the record as a map. Mutation of the map is not supported.
 	AsMap() map[string]string
 	// Return the contents of the record as a slice. Mutation of the slice is not supported.
@@ -76,6 +78,17 @@ func (r *record) Put(key string, value string) {
 			r.cache[key] = value
 		}
 		r.fields[x] = value
+	}
+}
+
+// Puts all the specified value into the record.
+func (r *record) PutAll(in Record) {
+	for i, k := range r.header {
+		v := in.Get(k)
+		r.fields[i] = v
+		if r.cache != nil {
+			r.cache[k] = v
+		}
 	}
 }
 
