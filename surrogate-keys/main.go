@@ -27,6 +27,7 @@ import (
 	"crypto/md5"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -84,7 +85,7 @@ func body() error {
 		data, err := reader.Read()
 		augmentedData := make([]string, len(dataHeader)+1)
 		if err != nil {
-			if err.Error() == "EOF" {
+			if err == io.EOF {
 				break
 			}
 			return err

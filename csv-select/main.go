@@ -9,6 +9,7 @@ import (
 
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/wildducktheories/go-csv"
@@ -37,7 +38,7 @@ func body() error {
 
 	// open the reader
 	reader, err := csv.WithIoReader(os.Stdin)
-	if err != nil && err.Error() != "EOF" {
+	if err != nil && err != io.EOF {
 		return fmt.Errorf("cannot parse header from input stream: %v", err)
 	}
 
@@ -58,7 +59,7 @@ func body() error {
 	for {
 		data, err := reader.Read()
 		if err != nil {
-			if err.Error() == "EOF" {
+			if err == io.EOF {
 				break
 			}
 			return err

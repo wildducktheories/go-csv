@@ -2,7 +2,6 @@ package csv
 
 import (
 	"encoding/csv"
-	"fmt"
 	"io"
 	"os"
 )
@@ -30,7 +29,7 @@ func ReadAll(reader Reader) ([]Record, error) {
 		if record, err := reader.Read(); err == nil {
 			all = append(all, record)
 		} else {
-			if err.Error() == "EOF" {
+			if err == io.EOF {
 				err = nil
 			}
 			return all, err
@@ -46,16 +45,16 @@ func WithIoReader(io io.Reader) (Reader, error) {
 }
 
 // WithCsvReader creates a csv reader from the specified encoding/csv Reader.
-func WithCsvReader(io *csv.Reader) (Reader, error) {
-	header, err := io.Read()
-	if err == nil || err.Error() == "EOF" {
+func WithCsvReader(r *csv.Reader) (Reader, error) {
+	header, err := r.Read()
+	if err == nil || err == io.EOF {
 		if header == nil {
 			header = make([]string, 0)
 		}
 		return &reader{
 			builder: NewRecordBuilder(header),
 			header:  header,
-			csv:     io,
+			csv:     r,
 		}, nil
 	}
 	return nil, err
@@ -77,7 +76,7 @@ func (reader *reader) Header() []string {
 
 func (reader *reader) Read() (Record, error) {
 	if len(reader.header) == 0 {
-		return nil, fmt.Errorf("EOF")
+		return nil, io.EOF
 	}
 	fields, err := reader.csv.Read()
 	if err == nil {
