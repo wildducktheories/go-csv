@@ -10,28 +10,31 @@ type Writer interface {
 	Blank() Record        // Provide a blank record compatible with the stream.
 	Write(r Record) error // Write a single record into the underying stream.
 	Flush() error         // Perform a flush into the underlying stream.
+	Close() error
 }
 
 type writer struct {
 	header  []string
 	builder RecordBuilder
 	encoder *encoding.Writer
+	closer  io.Closer
 }
 
 // Answer a Writer for the CSV stream constrained by specified header, using the specified encoding writer
-func WithCsvWriter(header []string, w *encoding.Writer) (Writer, error) {
+func WithCsvWriter(header []string, w *encoding.Writer, c io.Closer) (Writer, error) {
 	result := &writer{
 		header:  header,
 		builder: NewRecordBuilder(header),
 		encoder: w,
+		closer:  c,
 	}
 	result.encoder.Write(header)
 	return result, result.encoder.Error()
 }
 
 // Answer a Writer for the CSV stream constrained by the specified header, using the specified io writer.
-func WithIoWriter(header []string, w io.Writer) (Writer, error) {
-	return WithCsvWriter(header, encoding.NewWriter(w))
+func WithIoWriter(header []string, w io.WriteCloser) (Writer, error) {
+	return WithCsvWriter(header, encoding.NewWriter(w), w)
 }
 
 // Answer the header that constrains the output stream
@@ -65,4 +68,18 @@ func (w *writer) Write(r Record) error {
 func (w *writer) Flush() error {
 	w.encoder.Flush()
 	return w.encoder.Error()
+}
+
+// Close the underlying stream.
+func (w *writer) Close() (err error) {
+	defer func() {
+		if w.closer != nil {
+			if err == nil {
+				err = w.closer.Close()
+			} else {
+				w.closer.Close()
+			}
+		}
+	}()
+	return w.Flush()
 }
