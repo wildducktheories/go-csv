@@ -3,7 +3,6 @@ package csv
 import (
 	"encoding/csv"
 	"io"
-	"os"
 )
 
 // Reader provides a reader of CSV streams whose first record is a header describing each field. Fields of each data
@@ -56,16 +55,6 @@ func WithCsvReader(r *csv.Reader) (Reader, error) {
 			header:  header,
 			csv:     r,
 		}, nil
-	}
-	return nil, err
-}
-
-// OpenForRead opens the specified file and calls NewReader on the resulting File.
-func OpenForRead(name string) (Reader, error) {
-	file, err := os.Open(name)
-	if err == nil {
-		reader, err := WithIoReader(file)
-		return reader, err
 	}
 	return nil, err
 }
