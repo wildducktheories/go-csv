@@ -16,10 +16,10 @@ func Index(a []string) map[string]int {
 // slice is a slice of elements in the second slice but not the first.
 func Intersect(a []string, b []string) ([]string, []string, []string) {
 	index := Index(a)
-	result := make([]string, 0, cap(b))
+	result := make([]string, 0, len(b))
 	aNotB := make([]string, len(a), len(a))
 	copy(aNotB, a)
-	bNotA := make([]string, 0, cap(b))
+	bNotA := make([]string, 0, len(b))
 	for _, v := range b {
 		if i, ok := index[v]; ok {
 			result = append(result, v)
