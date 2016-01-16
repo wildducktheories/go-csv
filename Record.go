@@ -16,7 +16,7 @@ type Record interface {
 	Get(key string) string
 	// Puts the value into the field specified by the key.
 	Put(key string, value string)
-	// Return the contents of the record as a map.
+	// Return the contents of the record as a map. Mutation of the map is not supported.
 	AsMap() map[string]string
 	// Return the contents of the record as a slice. Mutation of the slice is not supported.
 	AsSlice() []string
@@ -26,6 +26,7 @@ type record struct {
 	header []string
 	index  map[string]int
 	fields []string
+	cache  map[string]string
 }
 
 type RecordBuilder func(fields []string) Record
@@ -71,12 +72,19 @@ func (r *record) Put(key string, value string) {
 		if x > len(r.fields) {
 			r.fields = r.fields[0:x]
 		}
+		if r.cache != nil {
+			r.cache[key] = value
+		}
 		r.fields[x] = value
 	}
 }
 
-// Return a map containing the contents of the record.
+// Return a map containing a copy of the contents of the record.
 func (r *record) AsMap() map[string]string {
+	if r.cache != nil {
+		return r.cache
+	}
+
 	result := make(map[string]string)
 	for i, h := range r.header {
 		if i < len(r.fields) {
@@ -85,6 +93,7 @@ func (r *record) AsMap() map[string]string {
 			result[h] = ""
 		}
 	}
+	r.cache = result
 	return result
 }
 
