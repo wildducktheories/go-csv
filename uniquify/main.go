@@ -21,7 +21,6 @@
 package main
 
 import (
-	rawCsv "encoding/csv"
 	"github.com/wildducktheories/go-csv"
 	"github.com/wildducktheories/go-csv/utils"
 
@@ -90,38 +89,41 @@ func body() error {
 
 	keys := make(map[string]int)
 
-	writer := rawCsv.NewWriter(os.Stdout)
-	writer.Write(augmentedHeader)
-	for {
-		data, err := reader.Read()
-		augmentedData := make([]string, len(dataHeader)+1)
-		if err != nil {
-			if err == io.EOF {
-				break
+	if writer, err := csv.WithIoWriter(augmentedHeader, os.Stdout); err != nil {
+		return err
+	} else {
+
+		for {
+			data, err := reader.Read()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
 			}
-			return err
+			line++
+			augmentedData := writer.Blank()
+			key := make([]string, len(partialKeys))
+			for i, h := range partialKeys {
+				key[i] = data.Get(h)
+			}
+			formattedKey := csv.Format(key)
+			additionalKeyValue, ok := keys[formattedKey]
+			if !ok {
+				additionalKeyValue = 0
+			} else {
+				additionalKeyValue++
+			}
+			keys[formattedKey] = additionalKeyValue
+			augmentedData.PutAll(data)
+			if additionalKeyValue > 0 {
+				augmentedData.Put(additionalKey, fmt.Sprintf("%d", additionalKeyValue))
+			}
+			writer.Write(augmentedData)
 		}
-		line++
-		key := make([]string, len(partialKeys))
-		for i, h := range partialKeys {
-			key[i] = data.Get(h)
-		}
-		formattedKey := csv.Format(key)
-		additionalKeyValue, ok := keys[formattedKey]
-		if !ok {
-			additionalKeyValue = 0
-		} else {
-			additionalKeyValue++
-		}
-		keys[formattedKey] = additionalKeyValue
-		copy(augmentedData, data.AsSlice())
-		if additionalKeyValue > 0 {
-			augmentedData[len(dataHeader)] = fmt.Sprintf("%d", additionalKeyValue)
-		}
-		writer.Write(augmentedData)
+		writer.Flush()
+		failed = false
 	}
-	writer.Flush()
-	failed = false
 	return nil
 }
 

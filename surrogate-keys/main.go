@@ -20,7 +20,6 @@
 package main
 
 import (
-	rawCsv "encoding/csv"
 	"github.com/wildducktheories/go-csv"
 	"github.com/wildducktheories/go-csv/utils"
 
@@ -79,29 +78,33 @@ func body() error {
 	copy(augmentedHeader, dataHeader)
 	augmentedHeader[len(dataHeader)] = surrogateKey
 
-	writer := rawCsv.NewWriter(os.Stdout)
-	writer.Write(augmentedHeader)
-	for {
-		data, err := reader.Read()
-		augmentedData := make([]string, len(dataHeader)+1)
-		if err != nil {
-			if err == io.EOF {
-				break
+	if writer, err := csv.WithIoWriter(augmentedHeader, os.Stdout); err != nil {
+		return err
+	} else {
+		for {
+			data, err := reader.Read()
+			augmentedData := writer.Blank()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
 			}
-			return err
-		}
-		key := make([]string, len(naturalKeys))
-		for i, h := range naturalKeys {
-			key[i] = data.Get(h)
-		}
-		formattedKey := csv.Format(key)
+			key := make([]string, len(naturalKeys))
+			for i, h := range naturalKeys {
+				key[i] = data.Get(h)
+			}
+			formattedKey := csv.Format(key)
 
-		hash := fmt.Sprintf("%x", md5.Sum([]byte(formattedKey)))
-		copy(augmentedData, data.AsSlice())
-		augmentedData[len(dataHeader)] = hash
-		writer.Write(augmentedData)
+			hash := fmt.Sprintf("%x", md5.Sum([]byte(formattedKey)))
+			augmentedData.PutAll(data)
+			augmentedData.Put(surrogateKey, hash)
+			if err := writer.Write(augmentedData); err != nil {
+				return err
+			}
+		}
+		return writer.Flush()
 	}
-	writer.Flush()
 
 	return nil
 }

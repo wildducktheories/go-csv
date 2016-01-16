@@ -5,8 +5,6 @@
 package main
 
 import (
-	rawCsv "encoding/csv"
-
 	"flag"
 	"fmt"
 	"io"
@@ -54,8 +52,10 @@ func body() error {
 	}
 
 	// create a new output stream
-	writer := rawCsv.NewWriter(os.Stdout)
-	writer.Write(keys)
+	writer, err := csv.WithIoWriter(keys, os.Stdout)
+	if err != nil {
+		return err
+	}
 	for {
 		data, err := reader.Read()
 		if err != nil {
@@ -64,10 +64,8 @@ func body() error {
 			}
 			return err
 		}
-		outputData := make([]string, len(keys))
-		for i, h := range keys {
-			outputData[i] = data.Get(h)
-		}
+		outputData := writer.Blank()
+		outputData.PutAll(data)
 		writer.Write(outputData)
 	}
 	writer.Flush()
