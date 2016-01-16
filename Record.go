@@ -28,12 +28,14 @@ type record struct {
 	fields []string
 }
 
+type RecordBuilder func(fields []string) Record
+
 // NewRecordBuilder returns a function that can be used to create new Records
 // for a CSV stream with the specified header.
 //
 // This can be used with raw encoding/csv streams in cases where a CSV stream contains
 // more than one record type.
-func NewRecordBuilder(header []string) func(fields []string) Record {
+func NewRecordBuilder(header []string) RecordBuilder {
 	index := utils.Index(header)
 	return func(fields []string) Record {
 		if len(header) < len(fields) {
