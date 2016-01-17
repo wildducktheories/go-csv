@@ -29,7 +29,7 @@ import (
 	"os"
 )
 
-func body() error {
+func body() (err error) {
 	var partialKey, additionalKey string
 
 	flag.StringVar(&partialKey, "partial-key", "", "The fields of the partial key.")
@@ -41,7 +41,11 @@ func body() error {
 
 	defer func() {
 		if failed {
-			fmt.Fprintf(os.Stderr, "failed at line: %d\n", line+1)
+			if err == nil {
+				err = fmt.Errorf("failed at line: %d", line+1)
+			} else {
+				err = fmt.Errorf("failed at line: %d: %s", line+1, err)
+			}
 		}
 	}()
 
@@ -89,6 +93,7 @@ func body() error {
 	if writer, err := csv.WithIoWriter(augmentedHeader, os.Stdout); err != nil {
 		return err
 	} else {
+		defer writer.Flush()
 
 		for data := range reader.C() {
 			line++
@@ -111,7 +116,6 @@ func body() error {
 			}
 			writer.Write(augmentedData)
 		}
-		writer.Flush()
 		failed = false
 		return reader.Error()
 	}
