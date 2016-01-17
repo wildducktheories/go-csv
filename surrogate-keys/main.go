@@ -78,7 +78,6 @@ func body() error {
 	if writer, err := csv.WithIoWriter(augmentedHeader, os.Stdout); err != nil {
 		return err
 	} else {
-		defer writer.Flush()
 		for data := range reader.C() {
 			augmentedData := writer.Blank()
 			key := make([]string, len(naturalKeys))

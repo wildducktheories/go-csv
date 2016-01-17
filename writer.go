@@ -9,7 +9,6 @@ type Writer interface {
 	Header() []string     // Answer the header of the stream.
 	Blank() Record        // Provide a blank record compatible with the stream.
 	Write(r Record) error // Write a single record into the underying stream.
-	Flush() error         // Perform a flush into the underlying stream.
 	Close() error
 }
 
@@ -65,21 +64,10 @@ func (w *writer) Write(r Record) error {
 }
 
 // Flush into the underlying stream.
-func (w *writer) Flush() error {
-	w.encoder.Flush()
-	return w.encoder.Error()
-}
-
-// Close the underlying stream.
-func (w *writer) Close() (err error) {
-	defer func() {
-		if w.closer != nil {
-			if err == nil {
-				err = w.closer.Close()
-			} else {
-				w.closer.Close()
-			}
-		}
-	}()
-	return w.Flush()
+func (w *writer) Close() error {
+	if w.closer != nil {
+		return w.closer.Close()
+	} else {
+		return nil
+	}
 }

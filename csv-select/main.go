@@ -58,7 +58,6 @@ func body() error {
 		outputData.PutAll(data)
 		writer.Write(outputData)
 	}
-	writer.Flush()
 	return reader.Error()
 }
 

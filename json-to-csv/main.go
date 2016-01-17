@@ -92,7 +92,6 @@ func body() error {
 		if encoder, err := csv.WithIoWriter(header, os.Stdout); err != nil {
 			return err
 		} else {
-			defer encoder.Flush()
 
 			line := 0
 
