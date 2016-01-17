@@ -26,7 +26,6 @@ import (
 
 	"flag"
 	"fmt"
-	"io"
 	"os"
 )
 
@@ -64,10 +63,8 @@ func body() error {
 	}
 
 	// check that the partial keys exist in the dataHeader
-	reader, err := csv.WithIoReader(os.Stdin)
-	if err != nil {
-		return fmt.Errorf("cannot parse header from input stream: %v", err)
-	}
+	reader := csv.WithIoReader(os.Stdin)
+	defer reader.Close()
 	line = 1
 
 	// create a stream from the header
@@ -93,14 +90,7 @@ func body() error {
 		return err
 	} else {
 
-		for {
-			data, err := reader.Read()
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				return err
-			}
+		for data := range reader.C() {
 			line++
 			augmentedData := writer.Blank()
 			key := make([]string, len(partialKeys))
@@ -123,8 +113,8 @@ func body() error {
 		}
 		writer.Flush()
 		failed = false
+		return reader.Error()
 	}
-	return nil
 }
 
 func main() {

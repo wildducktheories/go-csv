@@ -26,7 +26,6 @@ import (
 	"crypto/md5"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 )
 
@@ -55,10 +54,8 @@ func body() error {
 	}
 
 	// check that the partial keys exist in the dataHeader
-	reader, err := csv.WithIoReader(os.Stdin)
-	if err != nil {
-		return fmt.Errorf("cannot parse header from input stream: %v", err)
-	}
+	reader := csv.WithIoReader(os.Stdin)
+	defer reader.Close()
 
 	// create a stream from the header
 	dataHeader := reader.Header()
@@ -81,15 +78,9 @@ func body() error {
 	if writer, err := csv.WithIoWriter(augmentedHeader, os.Stdout); err != nil {
 		return err
 	} else {
-		for {
-			data, err := reader.Read()
+		defer writer.Flush()
+		for data := range reader.C() {
 			augmentedData := writer.Blank()
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				return err
-			}
 			key := make([]string, len(naturalKeys))
 			for i, h := range naturalKeys {
 				key[i] = data.Get(h)
@@ -103,10 +94,8 @@ func body() error {
 				return err
 			}
 		}
-		return writer.Flush()
+		return reader.Error()
 	}
-
-	return nil
 }
 
 func main() {

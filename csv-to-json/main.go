@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -49,10 +48,8 @@ func body() error {
 	flag.Parse()
 
 	// open the reader
-	reader, err := csv.WithIoReader(os.Stdin)
-	if err != nil && err != io.EOF {
-		return fmt.Errorf("cannot parse header from input stream: %v", err)
-	}
+	reader := csv.WithIoReader(os.Stdin)
+	defer reader.Close()
 
 	encoder := json.NewEncoder(os.Stdout)
 
@@ -70,14 +67,7 @@ func body() error {
 	// see: http://stackoverflow.com/questions/13340717/json-numbers-regular-expression
 	numberMatcher := regexp.MustCompile("^ *-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)? *$")
 
-	for {
-		data, err := reader.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
+	for data := range reader.C() {
 		dataMap := data.AsMap()
 		objectMap := map[string]interface{}{}
 
@@ -127,8 +117,7 @@ func body() error {
 		}
 		encoder.Encode(objectMap)
 	}
-
-	return nil
+	return reader.Error()
 }
 
 func main() {

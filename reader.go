@@ -5,71 +5,105 @@ import (
 	"io"
 )
 
-// Reader provides a reader of CSV streams whose first record is a header describing each field. Fields of each data
-// record are keyed by the value of the corresponding field in the header record.
+// Reader provides a reader of CSV streams whose first record is a header describing each field.
 type Reader interface {
 	// Answers the header.
 	Header() []string
-	// Reads the next record from the stream.
-	Read() (Record, error)
+	// Answers a channel that iterates over a sequence of Records in the stream. The channel
+	// remains open until an error is encountered or until the stream is exhausted.
+	C() <-chan Record
+	// Answers the error that caused the stream to close, if any.
+	Error() error
+	// Close the reader and release any resources associated with it.
+	Close()
 }
 
 type reader struct {
-	builder func([]string) Record
-	header  []string
-	csv     *csv.Reader
+	init   chan interface{}
+	quit   chan interface{}
+	header []string
+	err    error
+	io     <-chan Record
 }
 
 // ReadAll reads all the records from the specified reader and only returns a non-nil error
 // if an error, other than EOF, occurs during the reading process.
 func ReadAll(reader Reader) ([]Record, error) {
 	all := make([]Record, 0, 1)
-	for {
-		if record, err := reader.Read(); err == nil {
-			all = append(all, record)
-		} else {
-			if err == io.EOF {
-				err = nil
-			}
-			return all, err
-		}
+	for record := range reader.C() {
+		all = append(all, record)
 	}
+	return all, reader.Error()
 }
 
 // WithIoReader creates a csv Reader from the specified io Reader.
-func WithIoReader(io io.Reader) (Reader, error) {
+func WithIoReader(io io.ReadCloser) Reader {
 	csvReader := csv.NewReader(io)
 	csvReader.FieldsPerRecord = -1
-	return WithCsvReader(csvReader)
+	return WithCsvReader(csvReader, io)
 }
 
 // WithCsvReader creates a csv reader from the specified encoding/csv Reader.
-func WithCsvReader(r *csv.Reader) (Reader, error) {
-	header, err := r.Read()
-	if err == nil || err == io.EOF {
-		if header == nil {
-			header = make([]string, 0)
-		}
-		return &reader{
-			builder: NewRecordBuilder(header),
-			header:  header,
-			csv:     r,
-		}, nil
+func WithCsvReader(r *csv.Reader, c io.Closer) Reader {
+	ch := make(chan Record)
+	result := &reader{
+		init: make(chan interface{}),
+		quit: make(chan interface{}),
+		io:   ch,
 	}
-	return nil, err
+	go func() {
+		defer close(ch)
+		defer func() {
+			if c != nil {
+				e := c.Close()
+				if result.err == nil {
+					result.err = e
+				}
+			}
+		}()
+		if h, e := r.Read(); e != nil {
+			result.header = []string{}
+			result.err = e
+			close(result.init)
+			return
+		} else {
+			result.header = h
+			close(result.init)
+		}
+		builder := NewRecordBuilder(result.header)
+		for {
+			if a, e := r.Read(); e != nil {
+				if e != io.EOF {
+					result.err = e
+				}
+				break
+			} else {
+				select {
+				case <-result.quit:
+					break
+				default:
+				}
+				ch <- builder(a)
+			}
+		}
+	}()
+	return result
 }
 
 func (reader *reader) Header() []string {
+	<-reader.init
 	return reader.header
 }
 
-func (reader *reader) Read() (Record, error) {
-	if len(reader.header) == 0 {
-		return nil, io.EOF
-	}
-	fields, err := reader.csv.Read()
-	if err == nil {
-		return reader.builder(fields), nil
-	}
-	return nil, err
+func (reader *reader) Error() error {
+	<-reader.init
+	return reader.err
+}
+
+func (reader *reader) C() <-chan Record {
+	return reader.io
+}
+
+func (reader *reader) Close() {
+	close(reader.quit)
 }
