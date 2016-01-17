@@ -90,34 +90,30 @@ func body() (err error) {
 
 	keys := make(map[string]int)
 
-	if writer, err := csv.WithIoWriter(augmentedHeader, os.Stdout); err != nil {
-		return err
-	} else {
-
-		for data := range reader.C() {
-			line++
-			augmentedData := writer.Blank()
-			key := make([]string, len(partialKeys))
-			for i, h := range partialKeys {
-				key[i] = data.Get(h)
-			}
-			formattedKey := csv.Format(key)
-			additionalKeyValue, ok := keys[formattedKey]
-			if !ok {
-				additionalKeyValue = 0
-			} else {
-				additionalKeyValue++
-			}
-			keys[formattedKey] = additionalKeyValue
-			augmentedData.PutAll(data)
-			if additionalKeyValue > 0 {
-				augmentedData.Put(additionalKey, fmt.Sprintf("%d", additionalKeyValue))
-			}
-			writer.Write(augmentedData)
+	writer := csv.WithIoWriter(os.Stdout)(augmentedHeader)
+	for data := range reader.C() {
+		line++
+		augmentedData := writer.Blank()
+		key := make([]string, len(partialKeys))
+		for i, h := range partialKeys {
+			key[i] = data.Get(h)
 		}
-		failed = false
-		return reader.Error()
+		formattedKey := csv.Format(key)
+		additionalKeyValue, ok := keys[formattedKey]
+		if !ok {
+			additionalKeyValue = 0
+		} else {
+			additionalKeyValue++
+		}
+		keys[formattedKey] = additionalKeyValue
+		augmentedData.PutAll(data)
+		if additionalKeyValue > 0 {
+			augmentedData.Put(additionalKey, fmt.Sprintf("%d", additionalKeyValue))
+		}
+		writer.Write(augmentedData)
 	}
+	failed = false
+	return reader.Error()
 }
 
 func main() {

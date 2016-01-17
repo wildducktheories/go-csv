@@ -12,28 +12,34 @@ type Writer interface {
 	Close() error
 }
 
+// A constructor for a writer.
+type WriterBuilder func([]string) Writer
+
 type writer struct {
 	header  []string
 	builder RecordBuilder
 	encoder *encoding.Writer
 	closer  io.Closer
+	err     error
 }
 
 // Answer a Writer for the CSV stream constrained by specified header, using the specified encoding writer
-func WithCsvWriter(header []string, w *encoding.Writer, c io.Closer) (Writer, error) {
-	result := &writer{
-		header:  header,
-		builder: NewRecordBuilder(header),
-		encoder: w,
-		closer:  c,
+func WithCsvWriter(w *encoding.Writer, c io.Closer) WriterBuilder {
+	return func(header []string) Writer {
+		result := &writer{
+			header:  header,
+			builder: NewRecordBuilder(header),
+			encoder: w,
+			closer:  c,
+		}
+		result.err = result.encoder.Write(header)
+		return result
 	}
-	result.encoder.Write(header)
-	return result, result.encoder.Error()
 }
 
 // Answer a Writer for the CSV stream constrained by the specified header, using the specified io writer.
-func WithIoWriter(header []string, w io.WriteCloser) (Writer, error) {
-	return WithCsvWriter(header, encoding.NewWriter(w), w)
+func WithIoWriter(w io.WriteCloser) WriterBuilder {
+	return WithCsvWriter(encoding.NewWriter(w), w)
 }
 
 // Answer the header that constrains the output stream
@@ -48,6 +54,9 @@ func (w *writer) Blank() Record {
 
 // Write a record into the underlying stream.
 func (w *writer) Write(r Record) error {
+	if w.err != nil {
+		return w.err
+	}
 	h := r.Header()
 	var d []string
 	if len(h) > 0 && len(w.header) == len(h) && &h[0] == &w.header[0] {

@@ -49,14 +49,13 @@ func body() error {
 	}
 
 	// create a new output stream
-	writer, err := csv.WithIoWriter(keys, os.Stdout)
-	if err != nil {
-		return err
-	}
+	writer := csv.WithIoWriter(os.Stdout)(keys)
 	for data := range reader.C() {
 		outputData := writer.Blank()
 		outputData.PutAll(data)
-		writer.Write(outputData)
+		if err := writer.Write(outputData); err != nil {
+			return err
+		}
 	}
 	return reader.Error()
 }

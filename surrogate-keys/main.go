@@ -75,26 +75,23 @@ func body() error {
 	copy(augmentedHeader, dataHeader)
 	augmentedHeader[len(dataHeader)] = surrogateKey
 
-	if writer, err := csv.WithIoWriter(augmentedHeader, os.Stdout); err != nil {
-		return err
-	} else {
-		for data := range reader.C() {
-			augmentedData := writer.Blank()
-			key := make([]string, len(naturalKeys))
-			for i, h := range naturalKeys {
-				key[i] = data.Get(h)
-			}
-			formattedKey := csv.Format(key)
-
-			hash := fmt.Sprintf("%x", md5.Sum([]byte(formattedKey)))
-			augmentedData.PutAll(data)
-			augmentedData.Put(surrogateKey, hash)
-			if err := writer.Write(augmentedData); err != nil {
-				return err
-			}
+	writer := csv.WithIoWriter(os.Stdout)(augmentedHeader)
+	for data := range reader.C() {
+		augmentedData := writer.Blank()
+		key := make([]string, len(naturalKeys))
+		for i, h := range naturalKeys {
+			key[i] = data.Get(h)
 		}
-		return reader.Error()
+		formattedKey := csv.Format(key)
+
+		hash := fmt.Sprintf("%x", md5.Sum([]byte(formattedKey)))
+		augmentedData.PutAll(data)
+		augmentedData.Put(surrogateKey, hash)
+		if err := writer.Write(augmentedData); err != nil {
+			return err
+		}
 	}
+	return reader.Error()
 }
 
 func main() {

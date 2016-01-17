@@ -88,46 +88,42 @@ func body() error {
 
 		// open the decoder
 		decoder := json.NewDecoder(os.Stdin)
+		encoder := csv.WithIoWriter(os.Stdout)(header)
 
-		if encoder, err := csv.WithIoWriter(header, os.Stdout); err != nil {
-			return err
-		} else {
+		line := 0
 
-			line := 0
-
-			for {
-				line++
-				m := map[string]interface{}{}
-				if err := decoder.Decode(&m); err != nil {
-					if err == io.EOF {
-						break
-					}
-					fmt.Fprintf(os.Stderr, "warning: %d: unable to decode object: %s\n", line, err)
-					return err
+		for {
+			line++
+			m := map[string]interface{}{}
+			if err := decoder.Decode(&m); err != nil {
+				if err == io.EOF {
+					break
 				}
-				r := encoder.Blank()
-				for _, k := range header {
-					v := readMap(m, paths[k])
-					if s, err := asString(v); err != nil {
-						fmt.Fprintf(os.Stderr, "warning: %d: unable to encode object: %s\n", line, err)
-						continue
-					} else {
-						r.Put(k, s)
-					}
+				fmt.Fprintf(os.Stderr, "warning: %d: unable to decode object: %s\n", line, err)
+				return err
+			}
+			r := encoder.Blank()
+			for _, k := range header {
+				v := readMap(m, paths[k])
+				if s, err := asString(v); err != nil {
+					fmt.Fprintf(os.Stderr, "warning: %d: unable to encode object: %s\n", line, err)
+					continue
+				} else {
+					r.Put(k, s)
 				}
+			}
 
-				if baseObject != "" {
-					if b, err := json.Marshal(m); err != nil {
-						fmt.Fprintf(os.Stderr, "warning: %d: unable to marshal object: %s\n", line, err)
-						continue
-					} else {
-						r.Put(baseObject, string(b))
-					}
+			if baseObject != "" {
+				if b, err := json.Marshal(m); err != nil {
+					fmt.Fprintf(os.Stderr, "warning: %d: unable to marshal object: %s\n", line, err)
+					continue
+				} else {
+					r.Put(baseObject, string(b))
 				}
+			}
 
-				if err := encoder.Write(r); err != nil {
-					return fmt.Errorf("fatal: %d: failed to write: %s", line, err)
-				}
+			if err := encoder.Write(r); err != nil {
+				return fmt.Errorf("fatal: %d: failed to write: %s", line, err)
 			}
 		}
 	}
