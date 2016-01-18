@@ -29,7 +29,7 @@ import (
 	"os"
 )
 
-func body() error {
+func body() (err error) {
 	var naturalKey, surrogateKey string
 
 	flag.StringVar(&naturalKey, "natural-key", "", "The fields of the natural key")
@@ -76,6 +76,7 @@ func body() error {
 	augmentedHeader[len(dataHeader)] = surrogateKey
 
 	writer := csv.WithIoWriter(os.Stdout)(augmentedHeader)
+	defer writer.Close(err)
 	for data := range reader.C() {
 		augmentedData := writer.Blank()
 		key := make([]string, len(naturalKeys))

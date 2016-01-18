@@ -56,7 +56,7 @@ func asString(v interface{}) (string, error) {
 	}
 }
 
-func body() error {
+func body() (err error) {
 	var baseObject string
 	var columns string
 
@@ -89,6 +89,7 @@ func body() error {
 		// open the decoder
 		decoder := json.NewDecoder(os.Stdin)
 		encoder := csv.WithIoWriter(os.Stdout)(header)
+		defer encoder.Close(err)
 
 		line := 0
 

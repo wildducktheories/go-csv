@@ -91,6 +91,8 @@ func body() (err error) {
 	keys := make(map[string]int)
 
 	writer := csv.WithIoWriter(os.Stdout)(augmentedHeader)
+	defer writer.Close(err)
+
 	for data := range reader.C() {
 		line++
 		augmentedData := writer.Blank()

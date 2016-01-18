@@ -50,6 +50,7 @@ func body() error {
 
 	// create a new output stream
 	writer := csv.WithIoWriter(os.Stdout)(keys)
+	defer writer.Close(err)
 	for data := range reader.C() {
 		outputData := writer.Blank()
 		outputData.PutAll(data)
