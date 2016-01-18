@@ -48,8 +48,9 @@ func configure(args []string) (*process, error) {
 
 }
 
-func (p *process) run(reader csv.Reader, builder csv.WriterBuilder) (err error) {
+func (p *process) run(reader csv.Reader, builder csv.WriterBuilder, errCh chan<- error) {
 	defer reader.Close()
+	var err error
 
 	keys := p.keys
 	permuteOnly := p.permuteOnly
@@ -72,18 +73,21 @@ func (p *process) run(reader csv.Reader, builder csv.WriterBuilder) (err error) 
 		outputData := writer.Blank()
 		outputData.PutAll(data)
 		if err := writer.Write(outputData); err != nil {
-			return err
+			errCh <- err
+			return
 		}
 	}
-	return reader.Error()
+	errCh <- reader.Error()
 }
 
 func main() {
 	var p *process
 	var err error
+	var errCh = make(chan error, 1)
 
 	if p, err = configure(os.Args[1:]); err == nil {
-		err = p.run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
+		p.run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout), errCh)
+		err = <-errCh
 	}
 
 	if err != nil {
