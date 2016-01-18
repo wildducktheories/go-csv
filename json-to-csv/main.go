@@ -56,7 +56,7 @@ func asString(v interface{}) (string, error) {
 	}
 }
 
-func body() (err error) {
+func body(decoder *json.Decoder, builder csv.WriterBuilder) (err error) {
 	var baseObject string
 	var columns string
 
@@ -87,8 +87,7 @@ func body() (err error) {
 		}
 
 		// open the decoder
-		decoder := json.NewDecoder(os.Stdin)
-		encoder := csv.WithIoWriter(os.Stdout)(header)
+		encoder := builder(header)
 		defer encoder.Close(err)
 
 		line := 0
@@ -132,7 +131,7 @@ func body() (err error) {
 }
 
 func main() {
-	err := body()
+	err := body(json.NewDecoder(os.Stdin), csv.WithIoWriter(os.Stdout))
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)

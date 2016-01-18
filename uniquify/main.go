@@ -29,7 +29,9 @@ import (
 	"os"
 )
 
-func body() (err error) {
+func body(reader csv.Reader, builder csv.WriterBuilder) (err error) { // check that the partial keys exist in the dataHeader
+	defer reader.Close()
+
 	var partialKey, additionalKey string
 
 	flag.StringVar(&partialKey, "partial-key", "", "The fields of the partial key.")
@@ -66,9 +68,6 @@ func body() (err error) {
 		return fmt.Errorf("--additional-key must specify the name of new column")
 	}
 
-	// check that the partial keys exist in the dataHeader
-	reader := csv.WithIoReader(os.Stdin)
-	defer reader.Close()
 	line = 1
 
 	// create a stream from the header
@@ -90,7 +89,7 @@ func body() (err error) {
 
 	keys := make(map[string]int)
 
-	writer := csv.WithIoWriter(os.Stdout)(augmentedHeader)
+	writer := builder(augmentedHeader)
 	defer writer.Close(err)
 
 	for data := range reader.C() {
@@ -119,7 +118,7 @@ func body() (err error) {
 }
 
 func main() {
-	err := body()
+	err := body(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)

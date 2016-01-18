@@ -13,7 +13,9 @@ import (
 	"github.com/wildducktheories/go-csv/utils"
 )
 
-func body() error {
+func body(reader csv.Reader, builder csv.WriterBuilder) error {
+	defer reader.Close()
+
 	var key string
 	var permuteOnly bool
 
@@ -33,10 +35,6 @@ func body() error {
 		return fmt.Errorf("--key must specify one or more columns")
 	}
 
-	// open the reader
-	reader := csv.WithIoReader(os.Stdin)
-	defer reader.Close()
-
 	// get the data header
 	dataHeader := reader.Header()
 
@@ -49,7 +47,7 @@ func body() error {
 	}
 
 	// create a new output stream
-	writer := csv.WithIoWriter(os.Stdout)(keys)
+	writer := builder(keys)
 	defer writer.Close(err)
 	for data := range reader.C() {
 		outputData := writer.Blank()
@@ -62,7 +60,7 @@ func body() error {
 }
 
 func main() {
-	err := body()
+	err := body(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)

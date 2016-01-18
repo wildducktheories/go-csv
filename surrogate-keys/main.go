@@ -29,7 +29,9 @@ import (
 	"os"
 )
 
-func body() (err error) {
+func body(reader csv.Reader, builder csv.WriterBuilder) (err error) {
+	defer reader.Close()
+
 	var naturalKey, surrogateKey string
 
 	flag.StringVar(&naturalKey, "natural-key", "", "The fields of the natural key")
@@ -53,10 +55,6 @@ func body() (err error) {
 		return fmt.Errorf("--surrogate-key must specify the name of a new column")
 	}
 
-	// check that the partial keys exist in the dataHeader
-	reader := csv.WithIoReader(os.Stdin)
-	defer reader.Close()
-
 	// create a stream from the header
 	dataHeader := reader.Header()
 
@@ -75,7 +73,7 @@ func body() (err error) {
 	copy(augmentedHeader, dataHeader)
 	augmentedHeader[len(dataHeader)] = surrogateKey
 
-	writer := csv.WithIoWriter(os.Stdout)(augmentedHeader)
+	writer := builder(augmentedHeader)
 	defer writer.Close(err)
 	for data := range reader.C() {
 		augmentedData := writer.Blank()
@@ -96,7 +94,7 @@ func body() (err error) {
 }
 
 func main() {
-	err := body()
+	err := body(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)

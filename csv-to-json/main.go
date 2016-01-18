@@ -39,7 +39,9 @@ func writeToMap(m map[string]interface{}, p []string, v interface{}) {
 
 }
 
-func body() error {
+func body(reader csv.Reader, encoder *json.Encoder) error {
+	defer reader.Close()
+
 	var baseObject string
 	var stringsOnly bool
 
@@ -48,11 +50,6 @@ func body() error {
 	flag.Parse()
 
 	// open the reader
-	reader := csv.WithIoReader(os.Stdin)
-	defer reader.Close()
-
-	encoder := json.NewEncoder(os.Stdout)
-
 	paths := map[string][]string{}
 	for _, k := range reader.Header() {
 		paths[k] = strings.Split(k, ".")
@@ -121,7 +118,7 @@ func body() error {
 }
 
 func main() {
-	err := body()
+	err := body(csv.WithIoReader(os.Stdin), json.NewEncoder(os.Stdout))
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)
