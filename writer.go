@@ -6,10 +6,11 @@ import (
 )
 
 type Writer interface {
-	Header() []string     // Answer the header of the stream.
-	Blank() Record        // Provide a blank record compatible with the stream.
-	Write(r Record) error // Write a single record into the underying stream.
-	Close(err error) error
+	Header() []string      // Answer the header of the stream.
+	Blank() Record         // Provide a blank record compatible with the stream.
+	Write(r Record) error  // Write a single record into the underying stream.
+	Error() error          // Return the final error.
+	Close(err error) error // Close the writer with the specified error.
 }
 
 // A constructor for a writer.
@@ -72,8 +73,13 @@ func (w *writer) Write(r Record) error {
 	return w.encoder.Write(d)
 }
 
+func (w *writer) Error() error {
+	return w.err
+}
+
 // Close the stream and propagate an error
 func (w *writer) Close(err error) error {
+	w.err = err
 	if w.closer != nil {
 		return w.closer.Close()
 	} else {
