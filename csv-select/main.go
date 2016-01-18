@@ -13,27 +13,46 @@ import (
 	"github.com/wildducktheories/go-csv/utils"
 )
 
-func body(reader csv.Reader, builder csv.WriterBuilder) error {
-	defer reader.Close()
+type process struct {
+	keys        []string
+	permuteOnly bool
+}
 
+func configure(args []string) (*process, error) {
+	flags := flag.NewFlagSet("csv-select", flag.ExitOnError)
 	var key string
 	var permuteOnly bool
 
-	flag.StringVar(&key, "key", "", "The fields to copy into the output stream")
-	flag.BoolVar(&permuteOnly, "permute-only", false, "Preserve all the fields of the input, but put the specified keys first")
-	flag.Parse()
+	flags.StringVar(&key, "key", "", "The fields to copy into the output stream")
+	flags.BoolVar(&permuteOnly, "permute-only", false, "Preserve all the fields of the input, but put the specified keys first")
+	if err := flags.Parse(args); err != nil {
+		return nil, err
+	}
 
 	usage := func() {
-		fmt.Printf("usage: select {options}\n")
-		flag.PrintDefaults()
+		fmt.Printf("usage: csv-select {options}\n")
+		flags.PrintDefaults()
 	}
 
 	// Use  a CSV parser to extract the partial keys from the parameter
 	keys, err := csv.Parse(key)
 	if err != nil || len(keys) < 1 {
 		usage()
-		return fmt.Errorf("--key must specify one or more columns")
+		return nil, fmt.Errorf("--key must specify one or more columns")
 	}
+
+	return &process{
+		keys:        keys,
+		permuteOnly: permuteOnly,
+	}, nil
+
+}
+
+func (p *process) run(reader csv.Reader, builder csv.WriterBuilder) (err error) {
+	defer reader.Close()
+
+	keys := p.keys
+	permuteOnly := p.permuteOnly
 
 	// get the data header
 	dataHeader := reader.Header()
@@ -60,7 +79,13 @@ func body(reader csv.Reader, builder csv.WriterBuilder) error {
 }
 
 func main() {
-	err := body(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
+	var p *process
+	var err error
+
+	if p, err = configure(os.Args[1:]); err == nil {
+		err = p.run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
+	}
+
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)
