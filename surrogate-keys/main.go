@@ -29,14 +29,23 @@ import (
 	"os"
 )
 
-func body(reader csv.Reader, builder csv.WriterBuilder) (err error) {
-	defer reader.Close()
+type process struct {
+	naturalKeys  []string
+	surrogateKey string
+}
 
+func configure(args []string) (*process, error) {
 	var naturalKey, surrogateKey string
+	var err error
 
-	flag.StringVar(&naturalKey, "natural-key", "", "The fields of the natural key")
-	flag.StringVar(&surrogateKey, "surrogate-key", "", "The field name for the surrogate key.")
-	flag.Parse()
+	flags := flag.NewFlagSet("surrogate-keys", flag.ContinueOnError)
+
+	flags.StringVar(&naturalKey, "natural-key", "", "The fields of the natural key")
+	flags.StringVar(&surrogateKey, "surrogate-key", "", "The field name for the surrogate key.")
+
+	if err = flags.Parse(args); err != nil {
+		return nil, err
+	}
 
 	usage := func() {
 		fmt.Printf("usage: surrogate-keys {options}\n")
@@ -47,25 +56,39 @@ func body(reader csv.Reader, builder csv.WriterBuilder) (err error) {
 	naturalKeys, err := csv.Parse(naturalKey)
 	if err != nil || len(naturalKey) < 1 {
 		usage()
-		return fmt.Errorf("--natural-key must specify one or more columns")
+		return nil, fmt.Errorf("--natural-key must specify one or more columns")
 	}
 
 	if surrogateKey == "" {
 		usage()
-		return fmt.Errorf("--surrogate-key must specify the name of a new column")
+		return nil, fmt.Errorf("--surrogate-key must specify the name of a new column")
 	}
+
+	return &process{
+		naturalKeys:  naturalKeys,
+		surrogateKey: surrogateKey,
+	}, nil
+}
+
+func (p *process) run(reader csv.Reader, builder csv.WriterBuilder, errCh chan<- error) {
+	defer reader.Close()
+
+	var err error
+
+	naturalKeys := p.naturalKeys
+	surrogateKey := p.surrogateKey
 
 	// create a stream from the header
 	dataHeader := reader.Header()
 
 	i, a, _ := utils.Intersect(naturalKeys, dataHeader)
 	if len(a) > 0 {
-		return fmt.Errorf("%s does not exist in the data header", csv.Format(a))
+		errCh <- fmt.Errorf("%s does not exist in the data header", csv.Format(a))
 	}
 
 	i, a, _ = utils.Intersect([]string{surrogateKey}, dataHeader)
 	if len(i) != 0 {
-		return fmt.Errorf("%s already exists in data header", i[0])
+		errCh <- fmt.Errorf("%s already exists in data header", i[0])
 	}
 
 	// create a new output stream
@@ -87,14 +110,24 @@ func body(reader csv.Reader, builder csv.WriterBuilder) (err error) {
 		augmentedData.PutAll(data)
 		augmentedData.Put(surrogateKey, hash)
 		if err := writer.Write(augmentedData); err != nil {
-			return err
+			errCh <- err
+			return
 		}
 	}
-	return reader.Error()
+	errCh <- reader.Error()
+	return
 }
 
 func main() {
-	err := body(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
+	var p *process
+	var err error
+
+	errCh := make(chan error, 1)
+	if p, err = configure(os.Args[1:]); err == nil {
+		p.run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout), errCh)
+		err = <-errCh
+	}
+
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)
