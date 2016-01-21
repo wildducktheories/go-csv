@@ -29,27 +29,22 @@ import (
 	"os"
 )
 
-func body(reader csv.Reader, builder csv.WriterBuilder) (err error) { // check that the partial keys exist in the dataHeader
-	defer reader.Close()
+type process struct {
+	partialKeys   []string
+	additionalKey string
+}
 
+func configure(args []string) (*process, error) {
 	var partialKey, additionalKey string
 
-	flag.StringVar(&partialKey, "partial-key", "", "The fields of the partial key.")
-	flag.StringVar(&additionalKey, "additional-key", "", "The field name for the additional key.")
-	flag.Parse()
+	flags := flag.NewFlagSet("uniquify", flag.ContinueOnError)
 
-	var line = 0
-	var failed = true
+	flags.StringVar(&partialKey, "partial-key", "", "The fields of the partial key.")
+	flags.StringVar(&additionalKey, "additional-key", "", "The field name for the additional key.")
 
-	defer func() {
-		if failed {
-			if err == nil {
-				err = fmt.Errorf("failed at line: %d", line+1)
-			} else {
-				err = fmt.Errorf("failed at line: %d: %s", line+1, err)
-			}
-		}
-	}()
+	if err := flags.Parse(args); err != nil {
+		return nil, err
+	}
 
 	usage := func() {
 		fmt.Printf("usage: uniqify {options}\n")
@@ -60,13 +55,39 @@ func body(reader csv.Reader, builder csv.WriterBuilder) (err error) { // check t
 	partialKeys, err := csv.Parse(partialKey)
 	if err != nil || len(partialKeys) < 1 {
 		usage()
-		return fmt.Errorf("--partial-key must specify one or more columns")
+		return nil, fmt.Errorf("--partial-key must specify one or more columns")
 	}
 
 	if additionalKey == "" {
 		usage()
-		return fmt.Errorf("--additional-key must specify the name of new column")
+		return nil, fmt.Errorf("--additional-key must specify the name of new column")
 	}
+
+	return &process{
+		partialKeys:   partialKeys,
+		additionalKey: additionalKey,
+	}, nil
+}
+
+func (p *process) run(reader csv.Reader, builder csv.WriterBuilder, errCh chan<- error) { // check that the partial keys exist in the dataHeader
+	defer reader.Close()
+	var line = 0
+	var failed = true
+	var err error
+
+	defer func() {
+		if failed {
+			if err == nil {
+				err = fmt.Errorf("failed at line: %d", line+1)
+			} else {
+				err = fmt.Errorf("failed at line: %d: %s", line+1, err)
+			}
+		}
+		errCh <- err
+	}()
+
+	partialKeys := p.partialKeys
+	additionalKey := p.additionalKey
 
 	line = 1
 
@@ -75,12 +96,14 @@ func body(reader csv.Reader, builder csv.WriterBuilder) (err error) { // check t
 
 	i, a, _ := utils.Intersect(partialKeys, dataHeader)
 	if len(a) > 0 {
-		return fmt.Errorf("%s does not exist in the data header", csv.Format(a))
+		err = fmt.Errorf("%s does not exist in the data header", csv.Format(a))
+		return
 	}
 
 	i, a, _ = utils.Intersect([]string{additionalKey}, dataHeader)
 	if len(i) != 0 {
-		return fmt.Errorf("%s already exists in data header", i[0])
+		err = fmt.Errorf("%s already exists in data header", i[0])
+		return
 	}
 
 	augmentedHeader := make([]string, len(dataHeader)+1)
@@ -114,11 +137,19 @@ func body(reader csv.Reader, builder csv.WriterBuilder) (err error) { // check t
 		writer.Write(augmentedData)
 	}
 	failed = false
-	return reader.Error()
+	err = reader.Error()
 }
 
 func main() {
-	err := body(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout))
+	var p *process
+	var err error
+	var errCh = make(chan error, 1)
+
+	if p, err = configure(os.Args[1:]); err == nil {
+		p.run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout), errCh)
+		err = <-errCh
+	}
+
 	if err != nil {
 		fmt.Printf("fatal: %v\n", err)
 		os.Exit(1)
