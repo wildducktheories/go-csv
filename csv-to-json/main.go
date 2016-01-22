@@ -97,7 +97,6 @@ func body(reader csv.Reader, encoder *json.Encoder) error {
 			} else if v[0] == '{' {
 				j := map[string]interface{}{}
 				if err := json.Unmarshal([]byte(v), &j); err == nil {
-					fmt.Fprintf(os.Stderr, "v, j = %s, %+v\n", v, j)
 					ov = j
 				}
 			} else if v[0] == '[' {
