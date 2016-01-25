@@ -15,6 +15,7 @@ TOOLS
 * surrogate-keys - augments the input stream so that each record in the output stream has a surrogate key derived from the MD5 sum of the natural key
 * csv-to-json - converts a CSV stream into a JSON stream.
 * json-to-csv - converts a JSON stream into a CSV stream.
+* csv-sort - sorts a CSV stream according to the specified columns.
 
 DOCUMENTATION
 =============
