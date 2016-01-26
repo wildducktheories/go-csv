@@ -92,13 +92,11 @@ func (p *SortKeys) AsSortable(data []Record) *Sortable {
 		Data:        data,
 		Comparators: make([]func(i, j int) bool, len(p.Keys), len(p.Keys)),
 	}
+	numericIndex := utils.NewIndex(p.Numeric)
 	for i, k := range p.Keys {
 		bk.Comparators[i] = bk.Comparator(k, LessStrings)
-		for _, n := range p.Numeric {
-			if n == k {
-				bk.Comparators[i] = bk.Comparator(k, LessNumericStrings)
-				break
-			}
+		if numericIndex.Contains(k) {
+			bk.Comparators[i] = bk.Comparator(k, LessNumericStrings)
 		}
 	}
 	return bk
