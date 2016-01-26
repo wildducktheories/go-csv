@@ -133,16 +133,17 @@ type SortProcess struct {
 // a strict superset of the receiver's Keys.
 func (p *SortProcess) Run(reader Reader, builder WriterBuilder, errCh chan<- error) {
 
-	errCh <- func() error {
+	errCh <- func() (err error) {
 		defer reader.Close()
 
 		keys := p.Keys
 
 		// get the data header
 		dataHeader := reader.Header()
+		writer := builder(dataHeader)
+		defer writer.Close(err)
 
 		_, x, _ := utils.Intersect(keys, dataHeader)
-
 		if len(x) != 0 {
 			return fmt.Errorf("invalid keys: %v", x)
 		}
@@ -150,9 +151,6 @@ func (p *SortProcess) Run(reader Reader, builder WriterBuilder, errCh chan<- err
 		if all, err := ReadAll(reader); err != nil {
 			return err
 		} else {
-
-			writer := builder(dataHeader)
-			defer writer.Close(err)
 
 			sort.Sort(p.AsSort(all))
 
