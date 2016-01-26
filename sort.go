@@ -72,11 +72,11 @@ func LessNumericStrings(l, r string) bool {
 	}
 }
 
-// Specifies the keys to be used by a CSV sort. Columns to be used as sort keys are specified with Keys, in order of precedence. Numeric
-// is the list of keys which for which a numeric comparison should be used.
+// Specifies the keys to be used by a CSV sort.
 type SortKeys struct {
-	Keys    []string
-	Numeric []string
+	Keys     []string // list of columns to use for sorting
+	Numeric  []string // list of columns for which a numerical string comparison is used
+	Reversed []string // list of columns for which the comparison is reversed
 }
 
 // Answer a Sort for the specified slice of CSV records, using the comparators derived from the
@@ -93,10 +93,17 @@ func (p *SortKeys) AsSortable(data []Record) *Sortable {
 		Comparators: make([]func(i, j int) bool, len(p.Keys), len(p.Keys)),
 	}
 	numericIndex := utils.NewIndex(p.Numeric)
+	reverseIndex := utils.NewIndex(p.Reversed)
 	for i, k := range p.Keys {
 		bk.Comparators[i] = bk.Comparator(k, LessStrings)
 		if numericIndex.Contains(k) {
 			bk.Comparators[i] = bk.Comparator(k, LessNumericStrings)
+		}
+		if reverseIndex.Contains(k) {
+			f := bk.Comparators[i]
+			bk.Comparators[i] = func(i, j int) bool {
+				return !f(i, j)
+			}
 		}
 	}
 	return bk
