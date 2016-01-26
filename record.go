@@ -41,7 +41,7 @@ type RecordBuilder func(fields []string) Record
 // This can be used with raw encoding/csv streams in cases where a CSV stream contains
 // more than one record type.
 func NewRecordBuilder(header []string) RecordBuilder {
-	index := utils.Index(header)
+	index := utils.NewIndex(header)
 	return func(fields []string) Record {
 		if len(header) < len(fields) {
 			fmt.Fprintf(os.Stderr, "invariant violated: [%d]fields=%v, [%d]header=%v\n", len(fields), fields, len(header), header)
