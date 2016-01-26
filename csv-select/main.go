@@ -1,7 +1,3 @@
-// Given a header-prefixed input stream of CSV records select the fields that match the specified key (--key).
-// If --permute-only is is specified, all the fields of the input stream are preserved, but the output stream
-// is permuted so that the key fields occupy the left-most fields of the output stream. The remaining fields
-// are preserved in their original order.
 package main
 
 import (
@@ -10,15 +6,9 @@ import (
 	"os"
 
 	"github.com/wildducktheories/go-csv"
-	"github.com/wildducktheories/go-csv/utils"
 )
 
-type process struct {
-	keys        []string
-	permuteOnly bool
-}
-
-func configure(args []string) (*process, error) {
+func configure(args []string) (*csv.SelectProcess, error) {
 	flags := flag.NewFlagSet("csv-select", flag.ExitOnError)
 	var key string
 	var permuteOnly bool
@@ -41,52 +31,20 @@ func configure(args []string) (*process, error) {
 		return nil, fmt.Errorf("--key must specify one or more columns")
 	}
 
-	return &process{
-		keys:        keys,
-		permuteOnly: permuteOnly,
+	return &csv.SelectProcess{
+		Keys:        keys,
+		PermuteOnly: permuteOnly,
 	}, nil
 
 }
 
-func (p *process) run(reader csv.Reader, builder csv.WriterBuilder, errCh chan<- error) {
-	defer reader.Close()
-	var err error
-
-	keys := p.keys
-	permuteOnly := p.permuteOnly
-
-	// get the data header
-	dataHeader := reader.Header()
-
-	_, _, b := utils.Intersect(keys, dataHeader)
-	if len(b) > 0 && permuteOnly {
-		extend := make([]string, len(keys)+len(b))
-		copy(extend, keys)
-		copy(extend[len(keys):], b)
-		keys = extend
-	}
-
-	// create a new output stream
-	writer := builder(keys)
-	defer writer.Close(err)
-	for data := range reader.C() {
-		outputData := writer.Blank()
-		outputData.PutAll(data)
-		if err := writer.Write(outputData); err != nil {
-			errCh <- err
-			return
-		}
-	}
-	errCh <- reader.Error()
-}
-
 func main() {
-	var p *process
+	var p *csv.SelectProcess
 	var err error
 	var errCh = make(chan error, 1)
 
 	if p, err = configure(os.Args[1:]); err == nil {
-		p.run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout), errCh)
+		p.Run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout), errCh)
 		err = <-errCh
 	}
 
