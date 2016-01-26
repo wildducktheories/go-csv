@@ -14,33 +14,35 @@ type SelectProcess struct {
 }
 
 func (p *SelectProcess) Run(reader Reader, builder WriterBuilder, errCh chan<- error) {
-	defer reader.Close()
-	var err error
+	errCh <- func() (err error) {
+		defer reader.Close()
 
-	keys := p.Keys
-	permuteOnly := p.PermuteOnly
+		keys := p.Keys
+		permuteOnly := p.PermuteOnly
 
-	// get the data header
-	dataHeader := reader.Header()
+		// get the data header
+		dataHeader := reader.Header()
 
-	_, _, b := utils.Intersect(keys, dataHeader)
-	if len(b) > 0 && permuteOnly {
-		extend := make([]string, len(keys)+len(b))
-		copy(extend, keys)
-		copy(extend[len(keys):], b)
-		keys = extend
-	}
-
-	// create a new output stream
-	writer := builder(keys)
-	defer writer.Close(err)
-	for data := range reader.C() {
-		outputData := writer.Blank()
-		outputData.PutAll(data)
-		if err := writer.Write(outputData); err != nil {
-			errCh <- err
-			return
+		_, _, b := utils.Intersect(keys, dataHeader)
+		if len(b) > 0 && permuteOnly {
+			extend := make([]string, len(keys)+len(b))
+			copy(extend, keys)
+			copy(extend[len(keys):], b)
+			keys = extend
 		}
-	}
-	errCh <- reader.Error()
+
+		// create a new output stream
+		writer := builder(keys)
+		defer writer.Close(err)
+
+		for data := range reader.C() {
+			outputData := writer.Blank()
+			outputData.PutAll(data)
+			if err = writer.Write(outputData); err != nil {
+				return err
+			}
+		}
+
+		return reader.Error()
+	}()
 }
