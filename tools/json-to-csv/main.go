@@ -1,14 +1,3 @@
-// Given a stream of JSON records, generate a stream of csv records.
-//
-// The columns of the csv stream are named by the --columns parameter. Each column is interprefed
-// as a path into the corresponding input object. If the object at that path is a string, the
-// string is copied into the specified column of the output stream. Otherwise, the json encoding
-// of the object is copied into the specified column of the output stream.
-//
-// Each object in the input object which is mapped by a CSV column is logically deleted from
-// the input object. If --base-object-key is specified, a JSON encoding of the remaining input object
-// is written into the specified column of the CSV output stream.
-//
 package main
 
 import (
