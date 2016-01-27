@@ -79,6 +79,10 @@ func (w *writer) Error() error {
 
 // Close the stream and propagate an error
 func (w *writer) Close(err error) error {
+	w.encoder.Flush()
+	if err == nil {
+		err = w.encoder.Error()
+	}
 	w.err = err
 	if w.closer != nil {
 		return w.closer.Close()
