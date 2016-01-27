@@ -21,20 +21,13 @@ package main
 
 import (
 	"github.com/wildducktheories/go-csv"
-	"github.com/wildducktheories/go-csv/utils"
 
-	"crypto/md5"
 	"flag"
 	"fmt"
 	"os"
 )
 
-type process struct {
-	naturalKeys  []string
-	surrogateKey string
-}
-
-func configure(args []string) (*process, error) {
+func configure(args []string) (*csv.SurrogateKeysProcess, error) {
 	var naturalKey, surrogateKey string
 	var err error
 
@@ -64,67 +57,19 @@ func configure(args []string) (*process, error) {
 		return nil, fmt.Errorf("--surrogate-key must specify the name of a new column")
 	}
 
-	return &process{
-		naturalKeys:  naturalKeys,
-		surrogateKey: surrogateKey,
+	return &csv.SurrogateKeysProcess{
+		NaturalKeys:  naturalKeys,
+		SurrogateKey: surrogateKey,
 	}, nil
 }
 
-func (p *process) run(reader csv.Reader, builder csv.WriterBuilder, errCh chan<- error) {
-	defer reader.Close()
-
-	var err error
-
-	naturalKeys := p.naturalKeys
-	surrogateKey := p.surrogateKey
-
-	// create a stream from the header
-	dataHeader := reader.Header()
-
-	i, a, _ := utils.Intersect(naturalKeys, dataHeader)
-	if len(a) > 0 {
-		errCh <- fmt.Errorf("%s does not exist in the data header", csv.Format(a))
-	}
-
-	i, a, _ = utils.Intersect([]string{surrogateKey}, dataHeader)
-	if len(i) != 0 {
-		errCh <- fmt.Errorf("%s already exists in data header", i[0])
-	}
-
-	// create a new output stream
-	augmentedHeader := make([]string, len(dataHeader)+1)
-	copy(augmentedHeader, dataHeader)
-	augmentedHeader[len(dataHeader)] = surrogateKey
-
-	writer := builder(augmentedHeader)
-	defer writer.Close(err)
-	for data := range reader.C() {
-		augmentedData := writer.Blank()
-		key := make([]string, len(naturalKeys))
-		for i, h := range naturalKeys {
-			key[i] = data.Get(h)
-		}
-		formattedKey := csv.Format(key)
-
-		hash := fmt.Sprintf("%x", md5.Sum([]byte(formattedKey)))
-		augmentedData.PutAll(data)
-		augmentedData.Put(surrogateKey, hash)
-		if err := writer.Write(augmentedData); err != nil {
-			errCh <- err
-			return
-		}
-	}
-	errCh <- reader.Error()
-	return
-}
-
 func main() {
-	var p *process
+	var p *csv.SurrogateKeysProcess
 	var err error
 
 	errCh := make(chan error, 1)
 	if p, err = configure(os.Args[1:]); err == nil {
-		p.run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout), errCh)
+		p.Run(csv.WithIoReader(os.Stdin), csv.WithIoWriter(os.Stdout), errCh)
 		err = <-errCh
 	}
 
