@@ -1,22 +1,3 @@
-// Given a header-prefixed input stream of CSV records and the specification of a natural key (--natural-key) generate an augmented, header-prefixed, output stream of CSV
-// records which contains a surrogate key (--surrogate-key) that is derived from the MD5 sum of the natural key.
-//
-// The surrogate key is constructed by calculating the MD5 hash of the string representation of a CSV record that contains the fields of the natural key
-// of each record.
-//
-// For example, given the following input CSV stream which has a natural key of Date,Amount,Sequence
-//    	Date,Amount,Description,Sequence
-//    	2014/12/31,100.0,Payment
-//    	2014/12/31,100.0,Payment,1
-//    	2014/12/31,85.0,Payment
-//
-// generate an additional column, KeyMD5, containing a surrogate key that represents the natural key.
-//
-// 		Date,Amount,Description,Sequence,KeyMD5
-// 		2014/12/31,100.0,Payment,"",bead7c34cf0828efb8a240e262e7afea
-// 		2014/12/31,100.0,Payment,1,cc8ab528163236eb1aa4004202ee1935
-// 		2014/12/31,85.0,Payment,"",8f4d3a8a05031256a4fa4cf1fadd757b
-//
 package main
 
 import (
