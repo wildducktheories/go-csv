@@ -16,6 +16,7 @@ TOOLS
 * csv-to-json - converts a CSV stream into a JSON stream.
 * json-to-csv - converts a JSON stream into a CSV stream.
 * csv-sort - sorts a CSV stream according to the specified columns.
+* csv-join - joins two sorted CSV streams after matching on specified columns.
 
 DOCUMENTATION
 =============
