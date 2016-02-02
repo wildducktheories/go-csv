@@ -94,7 +94,7 @@ func main() {
 					return err
 				} else {
 					var errCh = make(chan error, 1)
-					p.Run(left, right, csv.WithIoWriter(os.Stdout), errCh)
+					p.Bind(left).Run(right, csv.WithIoWriter(os.Stdout), errCh)
 					return <-errCh
 				}
 			}

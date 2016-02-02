@@ -114,7 +114,7 @@ func (p *JoinProcess) keyfunc(key []string) func(r Record) []string {
 	}
 }
 
-func (p *JoinProcess) Run(left Reader, right Reader, builder WriterBuilder, errCh chan<- error) {
+func (p *JoinProcess) run(left Reader, right Reader, builder WriterBuilder, errCh chan<- error) {
 	errCh <- func() (err error) {
 		defer left.Close()
 		defer right.Close()
@@ -205,4 +205,20 @@ func (p *JoinProcess) Run(left Reader, right Reader, builder WriterBuilder, errC
 		}
 	}()
 
+}
+
+type joinProcess struct {
+	join   *JoinProcess
+	reader Reader
+}
+
+func (p *JoinProcess) Bind(r Reader) Process {
+	return &joinProcess{
+		join:   p,
+		reader: r,
+	}
+}
+
+func (j *joinProcess) Run(r Reader, builder WriterBuilder, errCh chan<- error) {
+	j.join.run(j.reader, r, builder, errCh)
 }
