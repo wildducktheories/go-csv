@@ -57,8 +57,8 @@ func configure(args []string) (*csv.JoinProcess, []string, error) {
 	}
 
 	fn := flags.Args()
-	if len(fn) != 2 {
-		return nil, nil, fmt.Errorf("expected 2 file arguments, found %d", len(fn))
+	if len(fn) < 2 {
+		return nil, nil, fmt.Errorf("expected at least 2 file arguments, found %d", len(fn))
 	}
 
 	return &csv.JoinProcess{
@@ -87,17 +87,20 @@ func main() {
 
 	err = func() error {
 		if p, fn, err = configure(os.Args[1:]); err == nil {
-			if left, err := openReader(fn[0]); err != nil {
-				return err
-			} else {
-				if right, err := openReader(fn[1]); err != nil {
+			readers := make([]csv.Reader, len(fn))
+			for i, n := range fn {
+				if readers[i], err = openReader(n); err != nil {
 					return err
-				} else {
-					var errCh = make(chan error, 1)
-					p.Bind(left).Run(right, csv.WithIoWriter(os.Stdout), errCh)
-					return <-errCh
 				}
 			}
+			procs := make([]csv.Process, len(readers)-1)
+			for i, _ := range procs {
+				procs[i] = p.Bind(readers[i+1])
+			}
+			pipeline := csv.NewPipeLine(procs)
+			var errCh = make(chan error, 1)
+			pipeline.Run(readers[0], csv.WithIoWriter(os.Stdout), errCh)
+			return <-errCh
 		} else {
 			return err
 		}
