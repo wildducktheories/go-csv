@@ -13,8 +13,11 @@ type Writer interface {
 	Close(err error) error // Close the writer with the specified error.
 }
 
-// A constructor for a writer.
-type WriterBuilder func([]string) Writer
+// A constructor for a writer using the specified header.
+// By convention, passing a nil to the Builder returns a Writer
+// which will release any underlying resources held by the builder
+// when Close(error) is called.
+type WriterBuilder func(header []string) Writer
 
 type writer struct {
 	header  []string
