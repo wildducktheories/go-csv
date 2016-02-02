@@ -107,3 +107,11 @@ func (reader *reader) C() <-chan Record {
 func (reader *reader) Close() {
 	close(reader.quit)
 }
+
+// Given a reader and a process, answer a new reader which is the result of
+// applying the specified process to the specified reader.
+func WithProcess(r Reader, p Process) Reader {
+	pipe := NewPipe()
+	go p.Run(r, pipe.Builder(), make(chan error, 1))
+	return pipe.Reader()
+}
