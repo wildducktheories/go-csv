@@ -7,9 +7,11 @@ import (
 // A Join can be used to construct a process that will join two streams of CSV records by matching
 // records from each stream on the specified key columns.
 type Join struct {
-	LeftKeys  []string // the names of the keys from the left stream
-	RightKeys []string // the names of the keys from the right stream
-	Numeric   []string // the names of the keys in the left stream that are numeric keys
+	LeftKeys   []string // the names of the keys from the left stream
+	RightKeys  []string // the names of the keys from the right stream
+	Numeric    []string // the names of the keys in the left stream that are numeric keys
+	LeftOuter  bool     // perform a left outer join - left rows are copied even if there is no matching right row
+	RightOuter bool     // perform a right outer join - right rows are copied even if there is no matching left row
 }
 
 // A decorator for a reader that returns groups of consecutive records from the underlying reader
@@ -125,8 +127,10 @@ func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<
 				// copy left to output
 				//
 				for _, r := range leftG.get() {
-					if err := w(leftG.key, r, rightBlank); err != nil {
-						return err
+					if p.LeftOuter {
+						if err := w(leftG.key, r, rightBlank); err != nil {
+							return err
+						}
 					}
 				}
 			} else if less(rightG.key, leftG.key) {
@@ -134,8 +138,10 @@ func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<
 				// copy right to output
 				//
 				for _, r := range rightG.get() {
-					if err := w(rightG.key, leftBlank, r); err != nil {
-						return err
+					if p.RightOuter {
+						if err := w(rightG.key, leftBlank, r); err != nil {
+							return err
+						}
 					}
 				}
 			} else {
@@ -155,8 +161,10 @@ func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<
 			// copy left to output
 			//
 			for _, r := range leftG.get() {
-				if err := w(leftG.key, r, rightBlank); err != nil {
-					return err
+				if p.LeftOuter {
+					if err := w(leftG.key, r, rightBlank); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -165,8 +173,10 @@ func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<
 			// copy right to output
 			//
 			for _, r := range rightG.get() {
-				if err := w(rightG.key, leftBlank, r); err != nil {
-					return err
+				if p.RightOuter {
+					if err := w(rightG.key, leftBlank, r); err != nil {
+						return err
+					}
 				}
 			}
 		}

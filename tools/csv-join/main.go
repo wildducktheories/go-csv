@@ -14,9 +14,11 @@ func configure(args []string) (*csv.Join, []string, error) {
 	flags := flag.NewFlagSet("csv-join", flag.ExitOnError)
 	var joinKey string
 	var numericKey string
+	var joinType string
 
 	flags.StringVar(&joinKey, "join-key", "", "The columns of the join key")
 	flags.StringVar(&numericKey, "numeric", "", "The specified columns are treated as numeric strings.")
+	flags.StringVar(&joinType, "join-type", "outer", "The type of join to perform. One of: outer, left-outer, right-outer, inner")
 	if err := flags.Parse(args); err != nil {
 		return nil, nil, err
 	}
@@ -61,10 +63,24 @@ func configure(args []string) (*csv.Join, []string, error) {
 		return nil, nil, fmt.Errorf("expected at least 2 file arguments, found %d", len(fn))
 	}
 
+	var leftOuter, rightOuter bool
+	switch joinType {
+	case "left-outer":
+		leftOuter = true
+	case "right-outer":
+		rightOuter = true
+	case "inner":
+	default:
+		leftOuter = true
+		rightOuter = true
+	}
+
 	return &csv.Join{
-		LeftKeys:  leftKeys,
-		RightKeys: rightKeys,
-		Numeric:   numeric,
+		LeftKeys:   leftKeys,
+		RightKeys:  rightKeys,
+		Numeric:    numeric,
+		LeftOuter:  leftOuter,
+		RightOuter: rightOuter,
 	}, fn, nil
 }
 
