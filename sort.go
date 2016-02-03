@@ -9,6 +9,7 @@ import (
 // An adapter that converts a slice of CSV records into an instance of sort.Interface using the
 // specified comparators, in order, to compare records.
 type Sortable struct {
+	Keys        []string
 	Data        []Record
 	Comparators []func(i, j int) bool
 }
@@ -35,10 +36,10 @@ func (b *Sortable) Less(i, j int) bool {
 	return false
 }
 
-// Converts the receiver into a SortProcess with the specified keys.
-func (b *Sortable) AsSortProcess(keys []string) *SortProcess {
+// Converts the receiver into a SortProcess
+func (b *Sortable) AsSortProcess() *SortProcess {
 	return &SortProcess{
-		Keys: keys,
+		Keys: b.Keys,
 		AsSort: func(data []Record) sort.Interface {
 			b.Data = data
 			return b
@@ -89,6 +90,7 @@ func (p *SortKeys) AsSort(data []Record) sort.Interface {
 // comparators according the specification of the receiver.
 func (p *SortKeys) AsSortable(data []Record) *Sortable {
 	bk := &Sortable{
+		Keys:        p.Keys,
 		Data:        data,
 		Comparators: make([]func(i, j int) bool, len(p.Keys), len(p.Keys)),
 	}
