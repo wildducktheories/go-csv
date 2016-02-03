@@ -5,7 +5,7 @@ import (
 )
 
 // A process that can perform an outer join between the elements of two CSV streams.
-type JoinProcess struct {
+type Join struct {
 	LeftKeys  []string // the names of the keys from the left stream
 	RightKeys []string // the names of the keys from the right stream
 	Numeric   []string // the names of the keys in the left stream that are numeric keys
@@ -66,7 +66,7 @@ func (g *groupReader) get() []Record {
 }
 
 // Construct a key comparison function for key values
-func (p *JoinProcess) less() func(l, r []string) bool {
+func (p *Join) less() func(l, r []string) bool {
 	numeric := utils.NewIndex(p.Numeric)
 	comparators := make([]func(string, string) bool, len(p.LeftKeys))
 	for i, k := range p.LeftKeys {
@@ -91,7 +91,7 @@ func (p *JoinProcess) less() func(l, r []string) bool {
 
 // split the headers into the set of all headers, the set of key headers, the set of left headers
 // and the set of right headers
-func (p *JoinProcess) headers(leftHeader []string, rightHeader []string) ([]string, []string, []string, []string) {
+func (p *Join) headers(leftHeader []string, rightHeader []string) ([]string, []string, []string, []string) {
 	i, a, _ := utils.Intersect(leftHeader, p.LeftKeys)
 	_, b, _ := utils.Intersect(rightHeader, p.RightKeys)
 	f := make([]string, len(i)+len(a)+len(b))
@@ -104,7 +104,7 @@ func (p *JoinProcess) headers(leftHeader []string, rightHeader []string) ([]stri
 }
 
 // derive a function that extracts the values of they key from the specified record
-func (p *JoinProcess) keyfunc(key []string) func(r Record) []string {
+func (p *Join) keyfunc(key []string) func(r Record) []string {
 	return func(r Record) []string {
 		result := make([]string, len(key))
 		for i, k := range key {
@@ -114,7 +114,7 @@ func (p *JoinProcess) keyfunc(key []string) func(r Record) []string {
 	}
 }
 
-func (p *JoinProcess) run(left Reader, right Reader, builder WriterBuilder, errCh chan<- error) {
+func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<- error) {
 	errCh <- func() (err error) {
 		defer left.Close()
 		defer right.Close()
@@ -208,11 +208,11 @@ func (p *JoinProcess) run(left Reader, right Reader, builder WriterBuilder, errC
 }
 
 type joinProcess struct {
-	join   *JoinProcess
+	join   *Join
 	reader Reader
 }
 
-func (p *JoinProcess) Bind(r Reader) Process {
+func (p *Join) Bind(r Reader) Process {
 	return &joinProcess{
 		join:   p,
 		reader: r,

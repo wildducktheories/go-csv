@@ -10,7 +10,7 @@ import (
 	"github.com/wildducktheories/go-csv/utils"
 )
 
-func configure(args []string) (*csv.JoinProcess, []string, error) {
+func configure(args []string) (*csv.Join, []string, error) {
 	flags := flag.NewFlagSet("csv-join", flag.ExitOnError)
 	var joinKey string
 	var numericKey string
@@ -61,7 +61,7 @@ func configure(args []string) (*csv.JoinProcess, []string, error) {
 		return nil, nil, fmt.Errorf("expected at least 2 file arguments, found %d", len(fn))
 	}
 
-	return &csv.JoinProcess{
+	return &csv.Join{
 		LeftKeys:  leftKeys,
 		RightKeys: rightKeys,
 		Numeric:   numeric,
@@ -81,12 +81,12 @@ func openReader(n string) (csv.Reader, error) {
 }
 
 func main() {
-	var p *csv.JoinProcess
+	var j *csv.Join
 	var err error
 	var fn []string
 
 	err = func() error {
-		if p, fn, err = configure(os.Args[1:]); err == nil {
+		if j, fn, err = configure(os.Args[1:]); err == nil {
 			readers := make([]csv.Reader, len(fn))
 			for i, n := range fn {
 				if readers[i], err = openReader(n); err != nil {
@@ -95,7 +95,7 @@ func main() {
 			}
 			procs := make([]csv.Process, len(readers)-1)
 			for i, _ := range procs {
-				procs[i] = p.Bind(readers[i+1])
+				procs[i] = j.Bind(readers[i+1])
 			}
 			pipeline := csv.NewPipeLine(procs)
 			var errCh = make(chan error, 1)
