@@ -87,19 +87,53 @@ func main() {
 
 	err = func() error {
 		if j, fn, err = configure(os.Args[1:]); err == nil {
+
+			// construct a sort process for the left most file
+
+			leftSortProcess := (&csv.SortKeys{
+				Numeric: j.Numeric,
+				Keys:    j.LeftKeys,
+			}).AsSortProcess()
+
+			// map the numeric key to the keyspace of the rightmost files
+
+			l2r := map[string]string{}
+			for i, k := range j.LeftKeys {
+				l2r[k] = j.RightKeys[i]
+			}
+
+			rightNumeric := make([]string, len(j.Numeric))
+			for i, k := range j.Numeric {
+				rightNumeric[i] = l2r[k]
+			}
+
+			// create a sort process for the right most files.
+
+			rightSortProcess := (&csv.SortKeys{
+				Numeric: rightNumeric,
+				Keys:    j.RightKeys,
+			}).AsSortProcess()
+
+			// open one reader for each file
 			readers := make([]csv.Reader, len(fn))
 			for i, n := range fn {
 				if readers[i], err = openReader(n); err != nil {
 					return err
 				}
 			}
+
+			// create one join process for each of the last n-1 readers
 			procs := make([]csv.Process, len(readers)-1)
 			for i, _ := range procs {
-				procs[i] = j.WithRight(readers[i+1])
+				procs[i] = j.WithRight(csv.WithProcess(readers[i+1], rightSortProcess))
 			}
+
+			// create a pipeline from the n-1 join processes
 			pipeline := csv.NewPipeLine(procs)
+
+			// run the join pipeline with the first reader
 			var errCh = make(chan error, 1)
-			pipeline.Run(readers[0], csv.WithIoWriter(os.Stdout), errCh)
+			pipeline.Run(csv.WithProcess(readers[0], leftSortProcess), csv.WithIoWriter(os.Stdout), errCh)
 			return <-errCh
 		} else {
 			return err

@@ -4,7 +4,8 @@ import (
 	"github.com/wildducktheories/go-csv/utils"
 )
 
-// A process that can perform an outer join between the elements of two CSV streams.
+// A Join can be used to construct a process that will join two streams of CSV records by matching
+// records from each stream on the specified key columns.
 type Join struct {
 	LeftKeys  []string // the names of the keys from the left stream
 	RightKeys []string // the names of the keys from the right stream
