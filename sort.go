@@ -153,7 +153,7 @@ func (p *SortKeys) AsSliceComparator() func(l, r []string) bool {
 	}
 }
 
-// Answers a comparator that can compare two records.
+// Answers a slice of comparators that can compare two records.
 func (p *SortKeys) AsRecordComparators() []func(l, r Record) bool {
 	numeric := utils.NewIndex(p.Numeric)
 	reverseIndex := utils.NewIndex(p.Reversed)
@@ -179,9 +179,8 @@ func (p *SortKeys) AsRecordComparators() []func(l, r Record) bool {
 	return comparators
 }
 
-// Answers a comparator that can compare two records.
-func (p *SortKeys) AsRecordComparator() func(l, r Record) bool {
-	comparators := p.AsRecordComparators()
+// Constructs a single RecordComparator from a slice of RecordComparators
+func AsRecordComparator(comparators []func(l, r Record) bool) func(l, r Record) bool {
 	return func(l, r Record) bool {
 		for _, c := range comparators {
 			if c(l, r) {
@@ -192,6 +191,12 @@ func (p *SortKeys) AsRecordComparator() func(l, r Record) bool {
 		}
 		return false
 	}
+
+}
+
+// Answers a comparator that can compare two records.
+func (p *SortKeys) AsRecordComparator() func(l, r Record) bool {
+	return AsRecordComparator(p.AsRecordComparators())
 }
 
 // A process, which given a CSV reader, sorts a stream of Records using the sort
