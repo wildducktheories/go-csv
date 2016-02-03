@@ -88,17 +88,6 @@ func (p *Join) headers(leftHeader []string, rightHeader []string) ([]string, []s
 	return f, i, a, b
 }
 
-// derive a function that extracts the values of they key from the specified record
-func (p *Join) keyfunc(key []string) func(r Record) []string {
-	return func(r Record) []string {
-		result := make([]string, len(key))
-		for i, k := range key {
-			result[i] = r.Get(k)
-		}
-		return result
-	}
-}
-
 func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<- error) {
 	errCh <- func() (err error) {
 		defer left.Close()
@@ -113,8 +102,8 @@ func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<
 		writer := builder(outputHeader)
 		defer writer.Close(err)
 
-		leftG := &groupReader{reader: left, less: less, tokey: p.keyfunc(p.LeftKeys)}
-		rightG := &groupReader{reader: right, less: less, tokey: p.keyfunc(p.RightKeys)}
+		leftG := &groupReader{reader: left, less: less, tokey: (&SortKeys{Keys: p.LeftKeys}).AsStringProjection()}
+		rightG := &groupReader{reader: right, less: less, tokey: (&SortKeys{Keys: p.RightKeys}).AsStringProjection()}
 
 		w := func(k []string, l, r Record) error {
 			o := writer.Blank()

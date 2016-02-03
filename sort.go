@@ -119,6 +119,17 @@ func (p *SortKeys) AsSortProcess() *SortProcess {
 	}
 }
 
+// Derive a StringProjection from the sort keys.
+func (p *SortKeys) AsStringProjection() StringProjection {
+	return func(r Record) []string {
+		result := make([]string, len(p.Keys))
+		for i, k := range p.Keys {
+			result[i] = r.Get(k)
+		}
+		return result
+	}
+}
+
 // Answers a comparator that can compare two slices.
 func (p *SortKeys) AsSliceComparator() func(l, r []string) bool {
 	numeric := utils.NewIndex(p.Numeric)
