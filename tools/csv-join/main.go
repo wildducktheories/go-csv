@@ -95,7 +95,7 @@ func main() {
 			}
 			procs := make([]csv.Process, len(readers)-1)
 			for i, _ := range procs {
-				procs[i] = j.Bind(readers[i+1])
+				procs[i] = j.WithRight(readers[i+1])
 			}
 			pipeline := csv.NewPipeLine(procs)
 			var errCh = make(chan error, 1)

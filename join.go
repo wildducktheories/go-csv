@@ -208,17 +208,19 @@ func (p *Join) run(left Reader, right Reader, builder WriterBuilder, errCh chan<
 }
 
 type joinProcess struct {
-	join   *Join
-	reader Reader
+	join  *Join
+	right Reader
 }
 
-func (p *Join) Bind(r Reader) Process {
+// Binds the specified reader as the right-hand side of a join and returns
+// a Process whose reader will be considered as the left-hand side of the join.
+func (p *Join) WithRight(r Reader) Process {
 	return &joinProcess{
-		join:   p,
-		reader: r,
+		join:  p,
+		right: r,
 	}
 }
 
 func (j *joinProcess) Run(r Reader, builder WriterBuilder, errCh chan<- error) {
-	j.join.run(j.reader, r, builder, errCh)
+	j.join.run(r, j.right, builder, errCh)
 }
