@@ -94,18 +94,10 @@ func (p *SortKeys) AsSortable(data []Record) *Sortable {
 		Data:        data,
 		Comparators: make([]func(i, j int) bool, len(p.Keys), len(p.Keys)),
 	}
-	numericIndex := utils.NewIndex(p.Numeric)
-	reverseIndex := utils.NewIndex(p.Reversed)
-	for i, k := range p.Keys {
-		bk.Comparators[i] = bk.Comparator(k, LessStrings)
-		if numericIndex.Contains(k) {
-			bk.Comparators[i] = bk.Comparator(k, LessNumericStrings)
-		}
-		if reverseIndex.Contains(k) {
-			f := bk.Comparators[i]
-			bk.Comparators[i] = func(i, j int) bool {
-				return !f(i, j)
-			}
+	for x, c := range p.AsRecordComparators() {
+		c := c
+		bk.Comparators[x] = func(i, j int) bool {
+			return c(bk.Data[i], bk.Data[j])
 		}
 	}
 	return bk
@@ -154,6 +146,47 @@ func (p *SortKeys) AsSliceComparator() func(l, r []string) bool {
 			if c(l[i], r[i]) {
 				return true
 			} else if c(r[i], l[i]) {
+				return false
+			}
+		}
+		return false
+	}
+}
+
+// Answers a comparator that can compare two records.
+func (p *SortKeys) AsRecordComparators() []func(l, r Record) bool {
+	numeric := utils.NewIndex(p.Numeric)
+	reverseIndex := utils.NewIndex(p.Reversed)
+	comparators := make([]func(Record, Record) bool, len(p.Keys))
+	for i, k := range p.Keys {
+		k := k
+		if numeric.Contains(k) {
+			comparators[i] = func(l, r Record) bool {
+				return LessNumericStrings(l.Get(k), r.Get(k))
+			}
+		} else {
+			comparators[i] = func(l, r Record) bool {
+				return LessStrings(l.Get(k), r.Get(k))
+			}
+		}
+		if reverseIndex.Contains(k) {
+			f := comparators[i]
+			comparators[i] = func(l, r Record) bool {
+				return !f(l, r)
+			}
+		}
+	}
+	return comparators
+}
+
+// Answers a comparator that can compare two records.
+func (p *SortKeys) AsRecordComparator() func(l, r Record) bool {
+	comparators := p.AsRecordComparators()
+	return func(l, r Record) bool {
+		for _, c := range comparators {
+			if c(l, r) {
+				return true
+			} else if c(r, l) {
 				return false
 			}
 		}
