@@ -39,3 +39,7 @@ func AsStringSliceComparator(comparators []StringComparator) StringSliceComparat
 		return false
 	}
 }
+
+// A Sort comparator compares two records, identified by i and j, and returns true if the ith record is
+// less than the jth record according to some total order.
+type SortComparator func(i, j int) bool

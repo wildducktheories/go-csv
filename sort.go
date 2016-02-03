@@ -11,7 +11,7 @@ import (
 type Sortable struct {
 	Keys        []string
 	Data        []Record
-	Comparators []func(i, j int) bool
+	Comparators []SortComparator
 }
 
 // An implementation of sort.Interface.Len()
@@ -48,7 +48,7 @@ func (b *Sortable) AsSortProcess() *SortProcess {
 }
 
 // Answer a comparator for the field named k, using the string comparator specified by less.
-func (b *Sortable) Comparator(k string, less StringComparator) func(i, j int) bool {
+func (b *Sortable) Comparator(k string, less StringComparator) SortComparator {
 	return func(i, j int) bool {
 		return less(b.Data[i].Get(k), b.Data[j].Get(k))
 	}
@@ -92,7 +92,7 @@ func (p *SortKeys) AsSortable(data []Record) *Sortable {
 	bk := &Sortable{
 		Keys:        p.Keys,
 		Data:        data,
-		Comparators: make([]func(i, j int) bool, len(p.Keys), len(p.Keys)),
+		Comparators: make([]SortComparator, len(p.Keys), len(p.Keys)),
 	}
 	for x, c := range p.AsRecordComparators() {
 		c := c
