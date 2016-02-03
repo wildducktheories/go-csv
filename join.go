@@ -68,26 +68,10 @@ func (g *groupReader) get() []Record {
 
 // Construct a key comparison function for key values
 func (p *Join) less() func(l, r []string) bool {
-	numeric := utils.NewIndex(p.Numeric)
-	comparators := make([]func(string, string) bool, len(p.LeftKeys))
-	for i, k := range p.LeftKeys {
-		if numeric.Contains(k) {
-			comparators[i] = LessNumericStrings
-		} else {
-			comparators[i] = LessStrings
-		}
-	}
-
-	return func(l, r []string) bool {
-		for i, c := range comparators {
-			if c(l[i], r[i]) {
-				return true
-			} else if c(r[i], l[i]) {
-				return false
-			}
-		}
-		return false
-	}
+	return (&SortKeys{
+		Keys:    p.LeftKeys,
+		Numeric: p.Numeric,
+	}).AsSliceComparator()
 }
 
 // split the headers into the set of all headers, the set of key headers, the set of left headers

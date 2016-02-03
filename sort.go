@@ -119,6 +119,37 @@ func (p *SortKeys) AsSortProcess() *SortProcess {
 	}
 }
 
+// Answers a comparator that can compare two slices.
+func (p *SortKeys) AsSliceComparator() func(l, r []string) bool {
+	numeric := utils.NewIndex(p.Numeric)
+	reverseIndex := utils.NewIndex(p.Reversed)
+	comparators := make([]func(string, string) bool, len(p.Keys))
+	for i, k := range p.Keys {
+		if numeric.Contains(k) {
+			comparators[i] = LessNumericStrings
+		} else {
+			comparators[i] = LessStrings
+		}
+		if reverseIndex.Contains(k) {
+			f := comparators[i]
+			comparators[i] = func(l, r string) bool {
+				return !f(l, r)
+			}
+		}
+	}
+
+	return func(l, r []string) bool {
+		for i, c := range comparators {
+			if c(l[i], r[i]) {
+				return true
+			} else if c(r[i], l[i]) {
+				return false
+			}
+		}
+		return false
+	}
+}
+
 // A process, which given a CSV reader, sorts a stream of Records using the sort
 // specified by the result of the AsSort function. The stream is checked to verify
 // that it has the specified keys.
