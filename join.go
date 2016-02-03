@@ -67,11 +67,11 @@ func (g *groupReader) get() []Record {
 }
 
 // Construct a key comparison function for key values
-func (p *Join) less() func(l, r []string) bool {
+func (p *Join) less() StringSliceComparator {
 	return (&SortKeys{
 		Keys:    p.LeftKeys,
 		Numeric: p.Numeric,
-	}).AsSliceComparator()
+	}).AsStringSliceComparator()
 }
 
 // split the headers into the set of all headers, the set of key headers, the set of left headers

@@ -48,7 +48,7 @@ func (b *Sortable) AsSortProcess() *SortProcess {
 }
 
 // Answer a comparator for the field named k, using the string comparator specified by less.
-func (b *Sortable) Comparator(k string, less func(l, r string) bool) func(i, j int) bool {
+func (b *Sortable) Comparator(k string, less StringComparator) func(i, j int) bool {
 	return func(i, j int) bool {
 		return less(b.Data[i].Get(k), b.Data[j].Get(k))
 	}
@@ -123,10 +123,10 @@ func (p *SortKeys) AsStringProjection() StringProjection {
 }
 
 // Answers a comparator that can compare two slices.
-func (p *SortKeys) AsSliceComparator() func(l, r []string) bool {
+func (p *SortKeys) AsStringSliceComparator() StringSliceComparator {
 	numeric := utils.NewIndex(p.Numeric)
 	reverseIndex := utils.NewIndex(p.Reversed)
-	comparators := make([]func(string, string) bool, len(p.Keys))
+	comparators := make([]StringComparator, len(p.Keys))
 	for i, k := range p.Keys {
 		if numeric.Contains(k) {
 			comparators[i] = LessNumericStrings
@@ -140,17 +140,7 @@ func (p *SortKeys) AsSliceComparator() func(l, r []string) bool {
 			}
 		}
 	}
-
-	return func(l, r []string) bool {
-		for i, c := range comparators {
-			if c(l[i], r[i]) {
-				return true
-			} else if c(r[i], l[i]) {
-				return false
-			}
-		}
-		return false
-	}
+	return AsStringSliceComparator(comparators)
 }
 
 // Answers a slice of comparators that can compare two records.
@@ -177,21 +167,6 @@ func (p *SortKeys) AsRecordComparators() []RecordComparator {
 		}
 	}
 	return comparators
-}
-
-// Constructs a single RecordComparator from a slice of RecordComparators
-func AsRecordComparator(comparators []RecordComparator) RecordComparator {
-	return func(l, r Record) bool {
-		for _, c := range comparators {
-			if c(l, r) {
-				return true
-			} else if c(r, l) {
-				return false
-			}
-		}
-		return false
-	}
-
 }
 
 // Answers a comparator that can compare two records.
