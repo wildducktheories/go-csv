@@ -36,7 +36,9 @@ func (b *Sortable) Less(i, j int) bool {
 	return false
 }
 
-// Converts the receiver into a SortProcess
+// Derives a SortProcess from the receiver. Note that it isn't safe
+// to run multiple processes derived from the same Sortable at the same
+// time.
 func (b *Sortable) AsSortProcess() *SortProcess {
 	return &SortProcess{
 		Keys: b.Keys,
