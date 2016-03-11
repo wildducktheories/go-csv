@@ -1,7 +1,9 @@
 package csv
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -33,7 +35,9 @@ func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<-
 		} else {
 
 			maxLen := len(p.Measurement)
+			count := 1
 			for data := range reader.C() {
+				count++
 
 				stringTs := data.Get(p.Timestamp)
 				if ts, err := time.ParseInLocation(p.Format, stringTs, location); err != nil {
@@ -72,7 +76,9 @@ func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<-
 						buffer = append(buffer, "="...)
 						buffer = append(buffer, v...)
 					}
+
 					if appended == 0 {
+						fmt.Fprintf(os.Stderr, "%d: dropping field-less point\n", count)
 						continue
 					}
 
