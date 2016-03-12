@@ -1,9 +1,11 @@
 package csv
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"time"
@@ -20,6 +22,22 @@ type InfluxLineFormatProcess struct {
 	Values      []string // the columns to be used as values.
 }
 
+// from influxdb
+var tagEscapeCodes = map[byte][]byte{
+	',': []byte(`\,`),
+	' ': []byte(`\ `),
+	'=': []byte(`\=`),
+}
+
+func escapeTag(in []byte) []byte {
+	for b, esc := range tagEscapeCodes {
+		if bytes.Contains(in, []byte{b}) {
+			in = bytes.Replace(in, []byte{b}, esc, -1)
+		}
+	}
+	return in
+}
+
 // Run exhausts the reader, writing one record in influx line format per CSV input record.
 func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<- error) {
 	errCh <- func() (err error) {
@@ -28,7 +46,7 @@ func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<-
 		sort.Strings(p.Tags)
 		sort.Strings(p.Values)
 		// see: http://stackoverflow.com/questions/13340717/json-numbers-regular-expression
-		// numberMatcher := regexp.MustCompile("^ *-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)? *$")
+		numberMatcher := regexp.MustCompile("^ *-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)? *$")
 
 		if location, err := time.LoadLocation(p.Location); err != nil {
 			return err
@@ -54,7 +72,7 @@ func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<-
 						buffer = append(buffer, ","...)
 						buffer = append(buffer, t...)
 						buffer = append(buffer, "="...)
-						buffer = append(buffer, v...)
+						buffer = append(buffer, escapeTag([]byte(v))...)
 					}
 
 					buffer = append(buffer, " "...)
@@ -74,7 +92,11 @@ func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<-
 						}
 						buffer = append(buffer, f...)
 						buffer = append(buffer, "="...)
-						buffer = append(buffer, v...)
+						if numberMatcher.MatchString(v) || v == "true" || v == "false" {
+							buffer = append(buffer, v...)
+						} else {
+							buffer = append(buffer, strconv.Quote(v)...)
+						}
 					}
 
 					if appended == 0 {
