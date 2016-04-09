@@ -58,7 +58,20 @@ func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<-
 				count++
 
 				stringTs := data.Get(p.Timestamp)
-				if ts, err := time.ParseInLocation(p.Format, stringTs, location); err != nil {
+
+				parse := func(s string) (time.Time, error) {
+					if p.Format == "ns" {
+						if ns, err := strconv.ParseInt(s, 10, 64); err != nil {
+							return time.Unix(0, 0), err
+						} else {
+							return time.Unix(0, ns), nil
+						}
+					} else {
+						return time.ParseInLocation(p.Format, stringTs, location)
+					}
+				}
+
+				if ts, err := parse(stringTs); err != nil {
 					return err
 				} else {
 
