@@ -18,6 +18,14 @@ TOOLS
 * csv-sort - sorts a CSV stream according to the specified columns.
 * csv-join - joins two sorted CSV streams after matching on specified columns.
 * influx-line-format - convert a CSV stream into influx line format.
+* csv-use-tab - uses a table delimit while writing (default) or reading (--on-read) a CSV stream
+
+INSTALLATION
+============
+The instructions assume that there is a local go installation available, that the binaries
+will be installed into $GOPATH/bin and this directory is already on the user's PATH.
+
+	go install github.com/wildducktheories/go-csv/...
 
 DOCUMENTATION
 =============
