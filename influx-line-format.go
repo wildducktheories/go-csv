@@ -66,6 +66,18 @@ func (p *InfluxLineFormatProcess) Run(reader Reader, out io.Writer, errCh chan<-
 						} else {
 							return time.Unix(0, ns), nil
 						}
+					} else if p.Format == "s" {
+						if sec, err := strconv.ParseInt(s, 10, 64); err != nil {
+							return time.Unix(0, 0), err
+						} else {
+							return time.Unix(sec, 0), nil
+						}
+					} else if p.Format == "ms" {
+						if ms, err := strconv.ParseInt(s, 10, 64); err != nil {
+							return time.Unix(0, 0), err
+						} else {
+							return time.Unix(0, ms*1000000), nil
+						}
 					} else {
 						return time.ParseInLocation(p.Format, stringTs, location)
 					}
