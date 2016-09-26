@@ -22,7 +22,7 @@ func configure(args []string) (*csv.InfluxLineFormatProcess, error) {
 
 	flags.StringVar(&measurement, "measurement", "", "The name of the influx measurement.")
 	flags.StringVar(&timestamp, "timestamp", "timestamp", "The name of the CSV timestamp field.")
-	flags.StringVar(&format, "format", "2006-01-02 15:04:05", "The format of the CSV timestamp field.")
+	flags.StringVar(&format, "format", "2006-01-02 15:04:05", "The format of the CSV timestamp field. A go timestamp format or s|ms|ns.")
 	flags.StringVar(&location, "location", "UTC", "The location in which the timestamp should be interpreted.")
 	flags.StringVar(&tags, "tags", "", "The CSV columns to be used as tags.")
 	flags.StringVar(&values, "values", "", "The CSV columns to be used as values.")
@@ -33,8 +33,6 @@ func configure(args []string) (*csv.InfluxLineFormatProcess, error) {
 	if _, err := time.LoadLocation(location); err != nil {
 		return nil, err
 	}
-
-	time.Now().Format(format)
 
 	if timestamp == "" {
 		return nil, errors.New("--timestamp column must be specified")
