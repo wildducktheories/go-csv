@@ -59,6 +59,7 @@ func (p *JsonToCsvProcess) asString(v interface{}) (string, error) {
 
 func (p *JsonToCsvProcess) Run(decoder *json.Decoder, builder WriterBuilder, errCh chan<- error) {
 	errCh <- func() (err error) {
+		decoder.UseNumber()
 		header := p.Header
 		baseObject := p.BaseObject
 
