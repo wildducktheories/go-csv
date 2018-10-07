@@ -43,6 +43,14 @@ func WithIoReader(io io.ReadCloser) Reader {
 	return WithCsvReader(csvReader, io)
 }
 
+// WithIoReaderAndDelimiter creates a csv Reader from the specified io Reader.
+func WithIoReaderAndDelimiter(io io.ReadCloser, delimiter rune) Reader {
+	csvReader := csv.NewReader(io)
+	csvReader.Comma = delimiter
+	csvReader.FieldsPerRecord = -1
+	return WithCsvReader(csvReader, io)
+}
+
 // WithCsvReader creates a csv reader from the specified encoding/csv Reader.
 func WithCsvReader(r *csv.Reader, c io.Closer) Reader {
 	ch := make(chan Record)

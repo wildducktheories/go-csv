@@ -46,6 +46,13 @@ func WithIoWriter(w io.WriteCloser) WriterBuilder {
 	return WithCsvWriter(encoding.NewWriter(w), w)
 }
 
+// Answer a Writer for the CSV stream constrained by the specified header, using the specified io writer and delimiter.
+func WithIoWriterAndDelimiter(w io.WriteCloser, delimiter rune) WriterBuilder {
+	writer := encoding.NewWriter(w)
+	writer.Comma = delimiter
+	return WithCsvWriter(writer, w)
+}
+
 // Answer the header that constrains the output stream
 func (w *writer) Header() []string {
 	return w.header
